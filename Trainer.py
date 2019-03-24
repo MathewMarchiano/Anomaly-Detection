@@ -1,0 +1,103 @@
+from sklearn.model_selection import train_test_split
+from sklearn import svm
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.neighbors import KNeighborsClassifier
+
+class Trainer():
+
+    def __init__(self):
+        pass
+
+    # Use label dictionaries of binarized classes to convert all original labels to 0's and 1's based off of what they
+    # were assigned bya given classifier. Used for training every classifier later on.
+    def makeTrainingLabels(self, labelDictionaries, labels):
+        allUpdatedLabels = []
+
+        for dictionary in labelDictionaries:
+            tempLabelList = []
+            for label in labels:
+                tempLabelList.append(dictionary[label])
+            allUpdatedLabels.append(tempLabelList)
+
+        return allUpdatedLabels
+
+    # Return models so that predictions can be done later. Make this ONLY do training.
+    def trainClassifiers(self, knownData, knownLabels, model):
+        trainedModels = []
+        trainingLabels = []
+        validationLabels = []
+
+        for labels in knownLabels:
+            trainData, valData, trainLabels, valLabels = train_test_split(knownData, labels,
+                                                                       test_size = .3, random_state = 12)
+            trainingLabels.append(trainLabels)
+            validationLabels.append(validationLabels)
+
+        for labels in trainingLabels:
+            if model is 1:
+                classifier = svm.SVC(gamma='auto')
+            elif model == 2:
+                classifier = DecisionTreeClassifier(random_state=0)
+            elif model == 3:
+                classifier = LinearDiscriminantAnalysis()
+            elif model == 4:
+                classifier = KNeighborsClassifier(n_neighbors=2)
+            elif model == "":
+                print("Specify Classifier")
+            classifier = classifier.fit(trainData, labels)
+            trainedModels.append(classifier)
+
+        return trainedModels, valData, valLabels, trainData
+
+    # Converts list containing multiple numpy arrays to list of lists containing codewords.
+    def predictionToCodeword(self, predictionList):
+        codeWordList = []
+        tempList = []
+        counter = 0
+
+        while counter < len(predictionList[0]):
+            for prediction in predictionList:
+                tempList.append(prediction[counter])
+            codeWordList.append(tempList)
+            tempList = []
+            counter += 1
+
+        return codeWordList
+
+    # Used trained classifiers to get predictions. Predictions will construct codewords.
+    def getPredictions(self, validationData, trainedClassifiers):
+        predictionList = []
+
+        for classifier in trainedClassifiers:
+            predictions = classifier.predict(validationData)
+            predictionList.append(predictions)
+
+        predictionList = self.predictionToCodeword(predictionList)
+
+        return predictionList
+
+    # Takes codewords (usually predicted codewords) and "updates" them to whatever codeword they are
+    # closest to (with respect to hamming distance) in a given codebook. Will also return a list that
+    # shows what the minimum hamming distances were when deciding which codeword to updated the predicted
+    # codeword with.
+    def hammingDistanceUpdater(self, codebook, codewords):
+        minHamWord = []
+        # List containing actual CW based off of shortest HD
+        UpdatedList = []
+        minHamList = []
+        for predictedCode in codewords:
+            minHam = len(predictedCode)
+            for actualCode in codebook:
+                hammingDistance = 0
+                for counter in range(0, len(predictedCode)):
+                    if actualCode[counter] != predictedCode[counter]:
+                        hammingDistance += 1
+                if hammingDistance < minHam:
+                    minHam = hammingDistance
+                    minHamWord = actualCode
+
+            UpdatedList.append(minHamWord)
+            minHamList.append(minHam)
+
+        return UpdatedList, minHamList
