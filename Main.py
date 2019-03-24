@@ -33,10 +33,10 @@ cb = [[1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1
 [0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1],
 [1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0]]
 
-dataset= "C:\ECOC\CSVFiles\yeastDataSet.csv"
+dataset= "C:\ECOC\CSVFiles\\abaloneCSV.csv"
 
 test = DatasetHandler(cb)
-x, y = test.getData(dataset, -1 , 0, 8)
+x, y = test.getData(dataset, -1 , 1, 7)
 scaledX = test.preprocessData(x)
 updatedLabels, dictionaryOfLabels = test.assignCodeword(y)
 classifiers = test.binarizeLabels(dictionaryOfLabels)
@@ -47,7 +47,7 @@ listOfUnknownClasses, listOfKnownClasses, holdoutClass = split.assignLabel(y, .5
 
 knownValidationData, knownValidationLabels, singleDataSamples, singleDataSamplesLabels, knownData, \
 knownLabels, unknownData, unknownLabels, holdoutData, holdoutLabels \
- = split.splitDataAndLabels(scaledX, y, listOfUnknownClasses, listOfKnownClasses, holdoutClass)
+ = split.splitDataAndLabels(scaledX, y, listOfUnknownClasses, holdoutClass)
 
 t = Trainer()
 
@@ -62,5 +62,5 @@ updatedLabelsList = t.makeTrainingLabels(listOfDictionaries, knownLabels)
 
 # Trained list of classifiers which will be used to make predictions on data which will result in a codeword.
 listOfClassifiers, validationData, validationLabels, trainData = t.trainClassifiers(knownData, updatedLabelsList, 2)
-predictions = t.getPredictions(trainData, listOfClassifiers)
-print(predictions)
+predictions = t.getPredictions(validationData, listOfClassifiers)
+ECOC, minHams = t.hammingDistanceUpdater(cb, predictions)

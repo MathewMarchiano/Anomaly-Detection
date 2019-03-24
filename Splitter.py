@@ -70,7 +70,7 @@ class Splitter():
 
     # Splits the data and labels into separate lists of holdout, known, or unknown.
     # Will also deal with splitting of the known data through use of knownDataSplit().
-    def splitDataAndLabels(self, data, allOrigLabels, unknownClasses, knownClasses, holdoutClass):
+    def splitDataAndLabels(self, data, allOrigLabels, unknownClasses, holdoutClass):
         holdoutData = []
         holdoutLabels = []
         unknownData = []

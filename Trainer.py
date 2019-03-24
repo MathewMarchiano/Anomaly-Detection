@@ -32,12 +32,12 @@ class Trainer():
             trainData, valData, trainLabels, valLabels = train_test_split(knownData, labels,
                                                                        test_size = .3, random_state = 12)
             trainingLabels.append(trainLabels)
-            validationLabels.append(validationLabels)
+            validationLabels.append(valLabels)
 
         for labels in trainingLabels:
             if model is 1:
                 classifier = svm.SVC(gamma='auto')
-            elif model == 2:
+            if model == 2:
                 classifier = DecisionTreeClassifier(random_state=0)
             elif model == 3:
                 classifier = LinearDiscriminantAnalysis()
@@ -48,16 +48,18 @@ class Trainer():
             classifier = classifier.fit(trainData, labels)
             trainedModels.append(classifier)
 
-        return trainedModels, valData, valLabels, trainData
+        validationLabels = self.toCodeword(validationLabels)
+
+        return trainedModels, valData, validationLabels, trainData
 
     # Converts list containing multiple numpy arrays to list of lists containing codewords.
-    def predictionToCodeword(self, predictionList):
+    def toCodeword(self, list):
         codeWordList = []
         tempList = []
         counter = 0
 
-        while counter < len(predictionList[0]):
-            for prediction in predictionList:
+        while counter < len(list[0]):
+            for prediction in list:
                 tempList.append(prediction[counter])
             codeWordList.append(tempList)
             tempList = []
@@ -73,7 +75,7 @@ class Trainer():
             predictions = classifier.predict(validationData)
             predictionList.append(predictions)
 
-        predictionList = self.predictionToCodeword(predictionList)
+        predictionList = self.toCodeword(predictionList)
 
         return predictionList
 
@@ -100,4 +102,20 @@ class Trainer():
             UpdatedList.append(minHamWord)
             minHamList.append(minHam)
 
+
         return UpdatedList, minHamList
+
+
+    # Gets accuracy of predicted codewords when compared to
+    # actual (i.e. validation) codewords
+    def compare(self, predictions, actual):
+        total = len(predictions)
+        right = 0
+
+        for (x, y) in zip(predictions, actual):
+            if x == y:
+                right += 1
+
+        percentRight = right * 1.0 / total
+
+        return percentRight
