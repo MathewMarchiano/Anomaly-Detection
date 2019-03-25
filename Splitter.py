@@ -108,16 +108,3 @@ class Splitter():
 
         return knownValidationData, knownValidationLabels, singleDataSamples, singleDataSamplesLabels, knownData, \
                knownLabels, unknownData, unknownLabels, holdoutData, holdoutLabels
-
-
-        pass
-
-
-
-
-
-
-
-
-
-

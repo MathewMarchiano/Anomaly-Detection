@@ -1,4 +1,5 @@
 from DataManagement import DatasetHandler
+from DataManagement import ThresholdManager
 from Splitter import Splitter
 from Trainer import Trainer
 
@@ -34,7 +35,7 @@ cb = [[1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1
 [1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0]]
 
 dataset= "C:\ECOC\CSVFiles\\abaloneCSV.csv"
-
+listOfThresholds = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5]
 test = DatasetHandler(cb)
 x, y = test.getData(dataset, -1 , 1, 7)
 scaledX = test.preprocessData(x)
@@ -64,3 +65,16 @@ updatedLabelsList = t.makeTrainingLabels(listOfDictionaries, knownLabels)
 listOfClassifiers, validationData, validationLabels, trainData = t.trainClassifiers(knownData, updatedLabelsList, 2)
 predictions = t.getPredictions(validationData, listOfClassifiers)
 ECOC, minHams = t.hammingDistanceUpdater(cb, predictions)
+
+tm = ThresholdManager()
+# Making predictions on the known validation data:
+valPredictions = t.getPredictions(knownValidationData, listOfClassifiers)
+# Getting the minimum hamming distances:
+ECOCVP, valPredHDs = t.hammingDistanceUpdater(cb, valPredictions)
+# Making predictions on the unknown data:
+unknownPreds = t.getPredictions(unknownData, listOfClassifiers)
+# Getting the minimum HDs:
+ECOCUP, unknownPredsHDs = t.hammingDistanceUpdater(cb, unknownPreds)
+optimalThreshold, lowestDifference, highestKnownAcc, highestUnknownAcc = tm.findOptimalThreshold(listOfThresholds, valPredHDs, unknownPredsHDs)
+print(highestKnownAcc)
+print(highestUnknownAcc)

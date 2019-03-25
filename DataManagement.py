@@ -93,6 +93,57 @@ class DatasetHandler():
 
         return classifierDictionaryList
 
+# Manages everything to do with finding the optimal threshold. DOES NOT deal with visualizing or interpreting the
+# data. DataProcessor will deal with that.
+class ThresholdManager():
+
+    def __init__(self):
+        pass
+
+    # Get accuracy for known and unknown detection. Known predictions should have a hamming distance
+    # value less than that of the threshold value. Unknown predictions should have a value greater than
+    # that of the threshold (ideally). Also calculates the absolute value of the difference between the
+    # two accuracies which is needed to determine what the most optimal threshold is.
+    def getAccuracy(self, threshold, knownHammingDistances, UnknownHammingDistances):
+        # HD = 'hamming distance'
+        totalKnownHDs = len(knownHammingDistances)
+        totalUnknownHDs = len(UnknownHammingDistances)
+        knownCounter = 0
+        unknownCounter = 0
+
+        for knownHD in knownHammingDistances:
+            if knownHD < threshold:
+                knownCounter += 1
+
+        for unknownHD in UnknownHammingDistances:
+            if unknownHD > threshold:
+                unknownCounter += 1
+
+        unknownAccuracy = 1.0 * unknownCounter / totalUnknownHDs
+        knownAccuracy = 1.0 * knownCounter / totalKnownHDs
+        difference = abs(knownAccuracy - unknownAccuracy)
+
+        return knownAccuracy, unknownAccuracy, difference
+
+    # When finding the optimal threshold, the knownHDs in this context refer to the known validation data
+    # (AKA, the 20% of the data withheld from training). The unknownHDs refers to the data that literally
+    # belong to the unknown group/split.
+    def findOptimalThreshold(self, listOfThresholds, knownHDs, unknownHDs):
+        lowestDifference = 1
+        optimalThreshold = 0
+        highestKnownAcc = 0
+        highestUnknownAcc = 0
+
+        for threshold in listOfThresholds:
+            knownAcc, unknownAcc, accuracyDifference = self.getAccuracy(threshold, knownHDs, unknownHDs)
+            if accuracyDifference < lowestDifference:
+                lowestDifference = accuracyDifference
+                optimalThreshold = threshold
+                highestKnownAcc = knownAcc
+                highestUnknownAcc = unknownAcc
+
+        return optimalThreshold, lowestDifference, highestKnownAcc, highestUnknownAcc
+
 
 # Deals with processing the data retrieved from training. Includes graphing.
 class DataProcessor():

@@ -43,7 +43,7 @@ class Trainer():
                 classifier = LinearDiscriminantAnalysis()
             elif model == 4:
                 classifier = KNeighborsClassifier(n_neighbors=2)
-            elif model == "":
+            else:
                 print("Specify Classifier")
             classifier = classifier.fit(trainData, labels)
             trainedModels.append(classifier)
