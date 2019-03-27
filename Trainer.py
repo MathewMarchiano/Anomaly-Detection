@@ -35,9 +35,9 @@ class Trainer():
             validationLabels.append(valLabels)
 
         for labels in trainingLabels:
-            if model is 1:
+            if model == 1:
                 classifier = svm.SVC(gamma='auto')
-            if model == 2:
+            elif model == 2:
                 classifier = DecisionTreeClassifier(random_state=0)
             elif model == 3:
                 classifier = LinearDiscriminantAnalysis()
