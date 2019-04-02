@@ -148,28 +148,37 @@ class ThresholdManager():
 
 # Deals with processing the data retrieved from training. Includes graphing.
 class DataProcessor():
-    # Graphs the number of number of instances of a particular hamming distance. Distinguishes between
-    # hammings distances that are supposed to be known or unknown. Visual representation of how well
-    # the threshold is performing. Shows the accuracy of each type of prediction.
+    # Graphs the number of instances of a particular hamming distance. Distinguishes between
+    # hamming distances that are supposed to be known or unknown.
     def graphKnownUnknownPredictions(self, knownHDs, unknownHDs, threshold, codebookNum, split, knownAcc, unknownAcc, seed, holdout):
         bins = np.arange(20)
-
+        ax = plt.subplot(111)
         thresholdText = "Optimal Threshold: " + str(threshold)
         title = "Codebook: " + str(codebookNum) + " Split: " + str(split) + " new" + "\n Seed: " + str(
             seed) + "\n Holdout: " + str(holdout)
         oldAccruacyText = "Known Classes: (" + str(round(knownAcc, 2)) + ")"
         newAccuracyText = "Unknown Classes: (" + str(round(unknownAcc, 2)) + ")"
 
-        plt.hist([knownHDs], bins=bins - .5, alpha=1, label=oldAccruacyText, ec='black')
-        plt.hist([unknownHDs], bins=bins - .5, alpha=0.60, label=newAccuracyText, ec='black', color='green')
-        plt.axvline(x=threshold, color='r', linestyle='dashed', linewidth=3, label=thresholdText)
-        plt.xlabel("Minimum Hamming Distance")
-        plt.ylabel("Frequency")
-        plt.title(title)
-        plt.legend(loc='upper right')
-        # plt.savefig("D:\ECOC\Pictures\HoldoutClassThresholdComparions_LetterRecognition\OldVsNew\\" + str(holdout) + "_" + str(split)
-        #             + "_" + str(threshold) + "_" + str(codebookNum) + "DT.jpg")
-        plt.show()
+        ax.hist([knownHDs], bins=bins - .5, alpha=1, label=oldAccruacyText, ec='black')
+        ax.hist([unknownHDs], bins=bins - .5, alpha=0.60, label=newAccuracyText, ec='black', color='green')
+        ax.axvline(x=threshold, color='r', linestyle='dashed', linewidth=3, label=thresholdText)
+        ax.set_xlabel("Minimum Hamming Distance")
+        ax.set_ylabel("Frequency")
+        ax.set_title(title)
+
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+
+        handles, labels = ax.get_legend_handles_labels()
+        lgd = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
+
+
+
+        plt.savefig("D:\ECOC\HammingDistanceHistograms\LetterRecognition\\" + str(holdout) + "_" + str(split)
+                    + "_" + str(threshold) + "_" + str(codebookNum) + "_KNN.jpg", dpi = 300,
+                    bbox_extra_artists = (lgd,), bbox_inches = 'tight')
+        # plt.show()
         plt.clf()
 
     # Graphs the holdout class's HDs against the threshold.
@@ -189,7 +198,7 @@ class DataProcessor():
         plt.legend(loc='upper right')
         # plt.savefig("D:\ECOC\Pictures\HoldoutClassThresholdComparions_LetterRecognition\HoldoutTest\\" + str(holdout) + "_" + str(split)
         #             + "_" + str(threshold) + "_" + str(codebookNum) + "_DT.jpg")
-        plt.show()
+        # plt.show()
         plt.clf()
 
     # Graphs the single data samples' hamming distances against the threshold.
@@ -209,13 +218,13 @@ class DataProcessor():
         plt.legend(loc='upper right')
         # plt.savefig("D:\ECOC\Pictures\HoldoutClassThresholdComparions_LetterRecognition\OldHoldoutTest\\" + str(holdout) + "_" + str(split)
         #             + "_" + str(threshold) + "_" + str(codebookNum) + "_DT.jpg")
-        plt.show()
+        # plt.show()
         plt.clf()
 
     # Calculates the accuracy of the predictions made on the holdout class's data. Ideally, the hamming
     # distances should all be greater than the value of the threshold, indicating that the prediction belongs
     # to a new class.
-    def holdoutClasssThresholdData(self, holdoutHammingDistances, threshold):
+    def unknownHoldoutClasssThresholdData(self, holdoutHammingDistances, threshold):
         correctPredictionAmount = 0
         total = len(holdoutHammingDistances)
         for hammingDistance in holdoutHammingDistances:
@@ -227,7 +236,7 @@ class DataProcessor():
     # Calculates the accuracy of the predictions made on the single samples of data taken from the known
     # data split (used for training). Ideally, the hamming distances should be less than the value of the
     # threshold, indicating that the prediction belongs to a class that the classifier knows.
-    def singleDataSampleThresholdData(self, singleDataHammingDistances, threshold):
+    def knownHoldoutDataSampleThresholdData(self, singleDataHammingDistances, threshold):
         correctPredictionAmount = 0
         total = len(singleDataHammingDistances)
         for hammingDistance in singleDataHammingDistances:
@@ -236,34 +245,37 @@ class DataProcessor():
 
         return correctPredictionAmount / total
 
-    def accuraciesPlot(self, knownAccMinDict, knownAccMaxDict, unknownAccMinDict, unknownAccMaxDict, codeBook):
+    def accuraciesPlot(self, knownAccMinDict, knownAccMaxDict, unknownAccMinDict, unknownAccMaxDict, knownMean, unknownMean, codeBook):
+        ax = plt.subplot(111)
 
-        plt.plot(list(knownAccMaxDict.keys()), list(knownAccMaxDict.values()), marker='o', color='blue', label='Known Max')
-        plt.plot(list(knownAccMinDict.keys()), list(knownAccMinDict.values()), marker='o', color='red', label='Known Min')
-        plt.plot(list(unknownAccMinDict.keys()), list(unknownAccMinDict.values()), marker='o', color='green',
+        # Representation of min and max values.
+        ax.plot(list(knownAccMaxDict.keys()), list(knownAccMaxDict.values()), marker='o', color='blue', label='Known Max')
+        ax.plot(list(knownAccMinDict.keys()), list(knownAccMinDict.values()), marker='o', color='red', label='Known Min')
+        ax.plot(list(unknownAccMinDict.keys()), list(unknownAccMinDict.values()), marker='o', color='green',
                  label='Unknown Min')
-        plt.plot(list(unknownAccMaxDict.keys()), list(unknownAccMaxDict.values()), marker='o', color='black',
+        ax.plot(list(unknownAccMaxDict.keys()), list(unknownAccMaxDict.values()), marker='o', color='black',
                  label='Unknown Max')
 
-        plt.title("Known and Unknown Max and Min Accuracies per Split")
-        plt.xlabel("Split")
-        plt.ylabel("Accuracy")
-        plt.legend()
 
-        plt.savefig("D:\ECOC\KnownUnknownAccuracies_MinMax\Abalone\\" + "_SVM_CWLength(" + str(
-            len(codeBook[0])) + ").jpg")
+        # Representation of the means.
+        ax.plot(list(knownMean.keys()), list(knownMean.values()), marker='o', color='magenta',
+                 label='Known Mean', linestyle = '--')
+
+        ax.plot(list(unknownMean.keys()), list(unknownMean.values()), marker='o', color='cyan',
+                 label='Unknown Mean', linestyle = '--')
+
+        ax.set_title("Known and Unknown Max and Min Accuracies per Split")
+        ax.set_xlabel("Split")
+        ax.set_ylabel("Accuracy")
+
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+        handles, labels = ax.get_legend_handles_labels()
+        lgd = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
+
+        plt.savefig("D:\ECOC\KnownUnknownAccuracies\LetterRecognition\\" + "_KNN_CWLength(" + str(
+            len(codeBook[0])) + ").jpg", dpi = 300,
+                    bbox_extra_artists = (lgd,), bbox_inches = 'tight')
         # plt.show()
-        plt.clf()
-
-    def meansPlot(self, codeBook, knownMean, unknownMean):
-        plt.plot(list(knownMean.keys()), list(knownMean.values()), marker='o', color='blue', label='Known Mean')
-        plt.plot(list(unknownMean.keys()), list(unknownMean.values()), marker='o', color='red', label='Unknown Mean')
-
-        plt.title("Mean Accuracy per Split")
-        plt.xlabel("Split")
-        plt.ylabel("Accuracy")
-        plt.legend()
-
-        plt.savefig("D:\ECOC\KnownUnknownAccuracies_Means\Abalone\\" + "_SVM_CWLength(" + str(
-            len(codeBook[0])) + ").jpg")
         plt.clf()
