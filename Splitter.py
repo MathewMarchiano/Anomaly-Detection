@@ -12,46 +12,64 @@ class Splitter():
         holdoutAmount = len(knownData) * .20
         knownValidationData = []
         knownValidationLabels = []
+        indicesToDelete = []
         counter = 0
 
-        #Randomly selecting known validation data and labels
+        # Randomly selecting known validation data and labels.
+        endIndex = len(knownData) - 1
         while(counter < holdoutAmount):
-            randIdx = random.randint(0, (len(knownData) - 1))
+            randIdx = random.randint(0, endIndex)
+            # Ensure that the same index isn't chosen twice.
+            while randIdx in indicesToDelete:
+                randIdx = random.randint(0, endIndex)
             knownValidationData.append(knownData[randIdx])
             knownValidationLabels.append(knownLabels[randIdx])
-            del knownData[randIdx]
-            del knownLabels[randIdx]
+            indicesToDelete.append(randIdx)
 
             counter += 1
 
-        #Getting single samples of data that the model will have seen
+        sortedIndicies = sorted(indicesToDelete, reverse=True)
+        for index in sortedIndicies:
+            del knownData[index]
+            del knownLabels[index]
+
+        #Getting single samples of data that the model will not be seen
         #during training.
         singleDataSamples = []
         singleDataSamplesLabels = []
         potentialIndicies = []
+        indicesToDelete = []
         index = 0
         uniqueKnownLabels = np.unique(knownLabels).tolist()
-
-        #Get all data for a particular label. Make list of indices.
+        # Get all data for a particular label. Make list of indices.
         for uniqueLabel in uniqueKnownLabels:
             for label in knownLabels:
                 if uniqueLabel == label:
                     potentialIndicies.append(index)
                 index += 1
-            #Randomly select an index to choose as a data sample.
-            randIdx = random.randint(0, (len(potentialIndicies) - 1))
-            singleDataSamples.append(knownData[randIdx])
-            singleDataSamplesLabels.append(knownLabels[randIdx])
+            # Randomly select an index to choose as a data sample.
+            randIdx = random.randint(0, (len(potentialIndicies)) - 1) # Random index to choose potential index
+            chosenIdx = potentialIndicies[randIdx]
+
+            singleDataSamples.append(knownData[chosenIdx])
+            singleDataSamplesLabels.append(knownLabels[chosenIdx])
+            indicesToDelete.append(chosenIdx)
+
             index = 0
             potentialIndicies = []
+
+        sortedIndicies = sorted(indicesToDelete, reverse=True)
+        for index in sortedIndicies:
+            del knownData[index]
+            del knownLabels[index]
 
         return knownValidationData, knownValidationLabels, singleDataSamples, \
                singleDataSamplesLabels, knownData, knownLabels
 
-    # Determines whether a label will be known, unkown, or holdout.
+    # Determines whether a label will be known, unknown, or holdout.
     def assignLabel(self, labels, percentUnknown, holdoutIndex):
         uniqueLabels = np.unique(labels).tolist()
-        numUnknown = int(len(uniqueLabels) * percentUnknown)
+        numUnknown = int(len(uniqueLabels) * percentUnknown) # Casting to int because whole numbers are required.
 
         #Remove holdout class from selection of labels.
         holdoutClass = uniqueLabels[holdoutIndex]

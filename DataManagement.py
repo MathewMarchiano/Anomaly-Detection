@@ -150,7 +150,7 @@ class ThresholdManager():
 class DataProcessor():
     # Graphs the number of instances of a particular hamming distance. Distinguishes between
     # hamming distances that are supposed to be known or unknown.
-    def graphKnownUnknownPredictions(self, knownHDs, unknownHDs, threshold, codebookNum, split, knownAcc, unknownAcc, seed, holdout):
+    def graphKnownUnknownHDs(self, knownHDs, unknownHDs, threshold, codebookNum, split, knownAcc, unknownAcc, seed, holdout):
         bins = np.arange(20)
         ax = plt.subplot(111)
         thresholdText = "Optimal Threshold: " + str(threshold)
@@ -175,9 +175,9 @@ class DataProcessor():
 
 
 
-        plt.savefig("D:\ECOC\HammingDistanceHistograms\LetterRecognition\\" + str(holdout) + "_" + str(split)
-                    + "_" + str(threshold) + "_" + str(codebookNum) + "_KNN.jpg", dpi = 300,
-                    bbox_extra_artists = (lgd,), bbox_inches = 'tight')
+        # plt.savefig("D:\ECOC\HammingDistanceHistograms\LetterRecognition\\" + str(holdout) + "_" + str(split)
+        #             + "_" + str(threshold) + "_" + str(codebookNum) + "_LDA.jpg", dpi = 300,
+        #             bbox_extra_artists = (lgd,), bbox_inches = 'tight')
         # plt.show()
         plt.clf()
 
@@ -224,7 +224,7 @@ class DataProcessor():
     # Calculates the accuracy of the predictions made on the holdout class's data. Ideally, the hamming
     # distances should all be greater than the value of the threshold, indicating that the prediction belongs
     # to a new class.
-    def unknownHoldoutClasssThresholdData(self, holdoutHammingDistances, threshold):
+    def unknownThresholdTest(self, holdoutHammingDistances, threshold):
         correctPredictionAmount = 0
         total = len(holdoutHammingDistances)
         for hammingDistance in holdoutHammingDistances:
@@ -236,7 +236,7 @@ class DataProcessor():
     # Calculates the accuracy of the predictions made on the single samples of data taken from the known
     # data split (used for training). Ideally, the hamming distances should be less than the value of the
     # threshold, indicating that the prediction belongs to a class that the classifier knows.
-    def knownHoldoutDataSampleThresholdData(self, singleDataHammingDistances, threshold):
+    def knownThresholdTest(self, singleDataHammingDistances, threshold):
         correctPredictionAmount = 0
         total = len(singleDataHammingDistances)
         for hammingDistance in singleDataHammingDistances:
@@ -274,8 +274,8 @@ class DataProcessor():
         handles, labels = ax.get_legend_handles_labels()
         lgd = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
 
-        plt.savefig("D:\ECOC\KnownUnknownAccuracies\LetterRecognition\\" + "_KNN_CWLength(" + str(
-            len(codeBook[0])) + ").jpg", dpi = 300,
-                    bbox_extra_artists = (lgd,), bbox_inches = 'tight')
-        # plt.show()
+        # plt.savefig("D:\ECOC\KnownUnknownAccuracies\LetterRecognition\\" + "_LDA_CWLength(" + str(
+        #     len(codeBook[0])) + ").jpg", dpi = 300,
+        #             bbox_extra_artists = (lgd,), bbox_inches = 'tight')
+        plt.show()
         plt.clf()

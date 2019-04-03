@@ -22,19 +22,11 @@ class Trainer():
 
         return allUpdatedLabels
 
-    # Return models so that predictions can be done later. Make this ONLY do training.
+    # Return models so that predictions can be done later.
     def trainClassifiers(self, knownData, knownLabels, model):
         trainedModels = []
-        trainingLabels = []
-        validationLabels = []
 
         for labels in knownLabels:
-            trainData, valData, trainLabels, valLabels = train_test_split(knownData, labels,
-                                                                       test_size = .3, random_state = 12)
-            trainingLabels.append(trainLabels)
-            validationLabels.append(valLabels)
-
-        for labels in trainingLabels:
             if model == 1:
                 classifier = svm.SVC(gamma='auto')
             elif model == 2:
@@ -45,12 +37,10 @@ class Trainer():
                 classifier = KNeighborsClassifier(n_neighbors=2)
             else:
                 print("Specify Classifier")
-            classifier = classifier.fit(trainData, labels)
+            classifier = classifier.fit(knownData, labels)
             trainedModels.append(classifier)
 
-        validationLabels = self.toCodeword(validationLabels)
-
-        return trainedModels, valData, validationLabels, trainData
+        return trainedModels
 
     # Converts list containing multiple numpy arrays to list of lists containing codewords.
     def toCodeword(self, list):
