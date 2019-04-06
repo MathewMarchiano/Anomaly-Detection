@@ -150,7 +150,11 @@ class ThresholdManager():
 class DataProcessor():
     # Graphs the number of instances of a particular hamming distance. Distinguishes between
     # hamming distances that are supposed to be known or unknown.
-    def graphKnownUnknownHDs(self, knownHDs, unknownHDs, threshold, codebookNum, split, knownAcc, unknownAcc, seed, holdout):
+    def graphKnownUnknownHDs(self, knownHDs, unknownHDs, threshold,
+                             codebookNum, split, knownAcc,
+                             unknownAcc, seed, holdout, allData,
+                             unknownData, knownTrain, codeBook,
+                             knownSingleDataPoints):
         bins = np.arange(20)
         ax = plt.subplot(111)
         thresholdText = "Optimal Threshold: " + str(threshold)
@@ -173,16 +177,22 @@ class DataProcessor():
         handles, labels = ax.get_legend_handles_labels()
         lgd = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
 
-
-
-        # plt.savefig("D:\ECOC\HammingDistanceHistograms\LetterRecognition\\" + str(holdout) + "_" + str(split)
-        #             + "_" + str(threshold) + "_" + str(codebookNum) + "_LDA.jpg", dpi = 300,
-        #             bbox_extra_artists = (lgd,), bbox_inches = 'tight')
-        # plt.show()
+        knownData = len(allData) - len(unknownData)
+        percentTraining = round((len(knownTrain) / knownData), 2)
+        saveInfo = "D:\ECOC\HammingDistanceHistograms\Abalone\\" + "DT_CWLength(" + str(len(codeBook[0])) \
+                   + ")_Holdout" + str(holdout) + "_Split" + str(split) + "_Threshold" \
+                   + str(threshold) +"_UnknownHoldoutClasses1_KnownHoldoutSamples" \
+                   + str(len(knownSingleDataPoints)) + "_PercentTrainingData" \
+                   + str(percentTraining) + ".jpg"
+        plt.savefig(saveInfo, dpi = 300,
+                    bbox_extra_artists = (lgd,), bbox_inches = 'tight')
+        plt.show()
         plt.clf()
 
     # Graphs the holdout class's HDs against the threshold.
-    def graphHoldoutHDs(self, threshold, holdoutHammingDistances, accuracy, codebookNum, split, seed, holdout):
+    def graphHoldoutHDs(self, threshold, holdoutHammingDistances,
+                        accuracy, codebookNum, split,
+                        seed, holdout):
         bins = np.arange(20)
 
         thresholdText = "Optimal Threshold: " + str(threshold)
@@ -202,7 +212,9 @@ class DataProcessor():
         plt.clf()
 
     # Graphs the single data samples' hamming distances against the threshold.
-    def singleDataHoldoutHistogram(self, threshold, holdoutHammingDistances, accuracy, codebookNum, split, seed, holdout):
+    def singleDataHoldoutHistogram(self, threshold, holdoutHammingDistances,
+                                   accuracy, codebookNum, split,
+                                   seed, holdout):
         bins = np.arange(20)
 
         thresholdText = "Optimal Threshold: " + str(threshold)
@@ -245,7 +257,10 @@ class DataProcessor():
 
         return correctPredictionAmount / total
 
-    def accuraciesPlot(self, knownAccMinDict, knownAccMaxDict, unknownAccMinDict, unknownAccMaxDict, knownMean, unknownMean, codeBook):
+    def accuraciesPlot(self, knownAccMinDict, knownAccMaxDict,
+                       unknownAccMinDict, unknownAccMaxDict, knownMean,
+                       unknownMean, codeBook, knownTrain, allData,
+                       unknownData, knownSingleDataPoints):
         ax = plt.subplot(111)
 
         # Representation of min and max values.
@@ -264,8 +279,8 @@ class DataProcessor():
         ax.plot(list(unknownMean.keys()), list(unknownMean.values()), marker='o', color='cyan',
                  label='Unknown Mean', linestyle = '--')
 
-        ax.set_title("Known and Unknown Max and Min Accuracies per Split")
-        ax.set_xlabel("Split")
+        ax.set_title("Prediction Accuracy per Split")
+        ax.set_xlabel("Percent Unknown")
         ax.set_ylabel("Accuracy")
 
         box = ax.get_position()
@@ -274,8 +289,12 @@ class DataProcessor():
         handles, labels = ax.get_legend_handles_labels()
         lgd = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
 
-        # plt.savefig("D:\ECOC\KnownUnknownAccuracies\LetterRecognition\\" + "_LDA_CWLength(" + str(
-        #     len(codeBook[0])) + ").jpg", dpi = 300,
-        #             bbox_extra_artists = (lgd,), bbox_inches = 'tight')
+        knownData = len(allData) - len(unknownData)
+        percentTraining = round((len(knownTrain)/knownData), 2)
+        saveInfo = "D:\ECOC\KnownUnknownAccuracies\Abalone\\" + "DT_CWLength(" + str(
+            len(codeBook[0])) + ")" + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
+            + str(len(knownSingleDataPoints))+ "_PercentTrainingData"+ str(percentTraining)  +".jpg"
+
+        plt.savefig(saveInfo, dpi = 300, bbox_extra_artists = (lgd,), bbox_inches = 'tight')
         plt.show()
         plt.clf()
