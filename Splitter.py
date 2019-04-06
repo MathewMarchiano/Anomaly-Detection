@@ -10,8 +10,8 @@ class Splitter():
     # Known data is used for training. Validation used for threshold.
     def knownDataSplit(self, knownData, knownLabels):
         holdoutAmount = len(knownData) * .20
-        knownValidationData = []
-        knownValidationLabels = []
+        knownThresholdData = []
+        knownThresholdLabels = []
         indicesToDelete = []
         counter = 0
 
@@ -22,8 +22,8 @@ class Splitter():
             # Ensure that the same index isn't chosen twice.
             while randIdx in indicesToDelete:
                 randIdx = random.randint(0, endIndex)
-            knownValidationData.append(knownData[randIdx])
-            knownValidationLabels.append(knownLabels[randIdx])
+            knownThresholdData.append(knownData[randIdx])
+            knownThresholdLabels.append(knownLabels[randIdx])
             indicesToDelete.append(randIdx)
 
             counter += 1
@@ -40,10 +40,10 @@ class Splitter():
         potentialIndicies = []
         indicesToDelete = []
         index = 0
-        uniqueKnownLabels = np.unique(knownLabels).tolist()
+        uniqueKnownLabels = np.unique(knownThresholdLabels).tolist()
         # Get all data for a particular label. Make list of indices.
         for uniqueLabel in uniqueKnownLabels:
-            for label in knownLabels:
+            for label in knownThresholdLabels:
                 if uniqueLabel == label:
                     potentialIndicies.append(index)
                 index += 1
@@ -51,8 +51,8 @@ class Splitter():
             randIdx = random.randint(0, (len(potentialIndicies)) - 1) # Random index to choose potential index
             chosenIdx = potentialIndicies[randIdx]
 
-            singleDataSamples.append(knownData[chosenIdx])
-            singleDataSamplesLabels.append(knownLabels[chosenIdx])
+            singleDataSamples.append(knownThresholdData[chosenIdx])
+            singleDataSamplesLabels.append(knownThresholdLabels[chosenIdx])
             indicesToDelete.append(chosenIdx)
 
             index = 0
@@ -60,10 +60,10 @@ class Splitter():
 
         sortedIndicies = sorted(indicesToDelete, reverse=True)
         for index in sortedIndicies:
-            del knownData[index]
-            del knownLabels[index]
+            del knownThresholdData[index]
+            del knownThresholdLabels[index]
 
-        return knownValidationData, knownValidationLabels, singleDataSamples, \
+        return knownThresholdData, knownThresholdLabels, singleDataSamples, \
                singleDataSamplesLabels, knownData, knownLabels
 
     # Determines whether a label will be known, unknown, or holdout.
