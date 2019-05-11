@@ -179,14 +179,14 @@ class DataProcessor():
 
         knownData = len(allData) - len(unknownData)
         percentTraining = round((len(knownTrain) / knownData), 2)
-        saveInfo = "D:\ECOC\HammingDistanceHistograms\Abalone\\" + "DT_CWLength(" + str(len(codeBook[0])) \
+        saveInfo = "D:\ECOC\HammingDistanceHistograms\Abalone\\" + "KNN_CWLength(" + str(len(codeBook[0])) \
                    + ")_Holdout" + str(holdout) + "_Split" + str(split) + "_Threshold" \
                    + str(threshold) +"_UnknownHoldoutClasses1_KnownHoldoutSamples" \
                    + str(len(knownSingleDataPoints)) + "_PercentTrainingData" \
                    + str(percentTraining) + ".jpg"
         plt.savefig(saveInfo, dpi = 300,
                     bbox_extra_artists = (lgd,), bbox_inches = 'tight')
-        plt.show()
+        # plt.show()
         plt.clf()
 
     # Graphs the holdout class's HDs against the threshold.
@@ -291,10 +291,10 @@ class DataProcessor():
 
         knownData = len(allData) - len(unknownData)
         percentTraining = round((len(knownTrain)/knownData), 2)
-        saveInfo = "D:\ECOC\KnownUnknownAccuracies\Abalone\\" + "DT_CWLength(" + str(
+        saveInfo = "D:\ECOC\KnownUnknownAccuracies\Abalone\\" + "KNN_CWLength(" + str(
             len(codeBook[0])) + ")" + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
             + str(len(knownSingleDataPoints))+ "_PercentTrainingData"+ str(percentTraining)  +".jpg"
 
         plt.savefig(saveInfo, dpi = 300, bbox_extra_artists = (lgd,), bbox_inches = 'tight')
-        plt.show()
+        # plt.show()
         plt.clf()
