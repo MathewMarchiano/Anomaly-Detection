@@ -140,7 +140,7 @@ cb3 = [[1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 
 
 dataset= "D:\ECOC\DownloadedDatasets\Abalone.csv"
 listOfThresholds = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5]
-listOfSplits = [0.10, .15, .20, .25]
+listOfSplits = [0.10, .15, .20, .25, .50, .75]
 listOfCBs = [cb, cb2, cb3]
 
 
@@ -189,7 +189,7 @@ def loop(listOfCBs, listOfThresholds, listOfNewSplits, dataset, numHoldouts):
                      = splitter.splitDataAndLabels(scaledData, allOriginalLabels, listOfUnknownClasses, holdoutClass)
 
                  knownECOCLabels = trainer.makeTrainingLabels(binaryClassifiers, knownLabels)
-                 listOfClassifiers = trainer.trainClassifiers(knownData, knownECOCLabels, 2)
+                 listOfClassifiers = trainer.trainClassifiers(knownData, knownECOCLabels, 4)
                                                             #1 = SVM, 2 = DT, 3 = LDA, 4 = KNN
 
                  # Getting predictions on all relevant data
