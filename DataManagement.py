@@ -54,6 +54,8 @@ class DatasetHandler():
 
     # Binarize labels based off of the assigned codeword for each class.
     # Needed for training later.
+    # I'm pretty sure this handles creating the binary columns that are passed
+    # (each one) to a unique classifier for training.
     def binarizeLabels(self, labelDictionary):
         updatedLabelsList = []
         classifierList = []

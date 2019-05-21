@@ -8,20 +8,7 @@ class Trainer():
     def __init__(self):
         pass
 
-    # Use label dictionaries of binarized classes to convert all original labels to 0's and 1's based off of what they
-    # were assigned bya given classifier (column in codebook). Used for training every classifier later on.
-    def makeTrainingLabels(self, labelDictionaries, labels):
-        allUpdatedLabels = []
-
-        for dictionary in labelDictionaries:
-            tempLabelList = []
-            for label in labels:
-                tempLabelList.append(dictionary[label])
-            allUpdatedLabels.append(tempLabelList)
-
-        return allUpdatedLabels
-
-    # Return models so that predictions can be done later.
+   # Return models so that predictions can be done later.
     def trainClassifiers(self, knownData, knownLabels, model):
         trainedModels = []
 
