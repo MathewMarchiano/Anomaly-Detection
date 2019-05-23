@@ -293,6 +293,15 @@ def loop(listOfCBs, listOfThresholds, listOfNewSplits, dataset, numHoldouts):
          thresholdMeanDictionary = {}
 
 
-#loop(listOfCBs, listOfThresholds, listOfSplits, dataset, 28)
+# loop(listOfCBs, listOfThresholds, listOfSplits, dataset, 28)
+
+testSplitter = Splitter()
+
+knownLabels = ["A","A","A","A","A","A", "B","B","B","B","B", "C","C","C","C","C","C","C","C","C","C","C"]
+knownData = [1,1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3]
+
+knownThresholdData, knownThresholdLabels, singleDataSamples, \
+singleDataSamplesLabels, knownData, knownLabels \
+                                     = testSplitter.knownDataSplit(knownData, knownLabels)
 
 

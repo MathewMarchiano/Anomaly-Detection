@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import math
 
 class Splitter():
 
@@ -9,32 +10,44 @@ class Splitter():
     # Utility method used in splitDataAndLabels to handle splitting of the known data.
     # Known data is used for training. Validation used for threshold.
     def knownDataSplit(self, knownData, knownLabels):
-        holdoutAmount = len(knownData) * .20
+        HOLDOUT_AMOUNT = .20
         knownThresholdData = []
         knownThresholdLabels = []
         indicesToDelete = []
-        counter = 0
 
-        # Randomly selecting known validation data and labels.
-        endIndex = len(knownData) - 1
-        while(counter < holdoutAmount):
-            randIdx = random.randint(0, endIndex)
-            # Ensure that the same index isn't chosen twice.
-            while randIdx in indicesToDelete:
+        # Randomly selecting 20% of known data
+        # Ensuring that each class is represented in the 20% split
+        uniqueLabels = np.unique(knownLabels)
+        for uniqueLabel in uniqueLabels:
+            index = 0
+            potentialIndices = []
+            # Gathering all indices of data/label pairings for a particular
+            # known class
+            for label in knownLabels:
+                if uniqueLabel == label:
+                    potentialIndices.append(index)
+                index += 1
+            # Randomly selecting 20% of that data to be used as the holdout
+            endIndex = len(potentialIndices) - 1
+            numDataSamples = math.ceil(len(potentialIndices)*HOLDOUT_AMOUNT)
+            if numDataSamples == 1:
+                numDataSamples += 1
+            for i in range(numDataSamples):
                 randIdx = random.randint(0, endIndex)
-            knownThresholdData.append(knownData[randIdx])
-            knownThresholdLabels.append(knownLabels[randIdx])
-            indicesToDelete.append(randIdx)
-
-            counter += 1
-
-        sortedIndicies = sorted(indicesToDelete, reverse=True)
-        for index in sortedIndicies:
+                chosenIndex = potentialIndices[randIdx]
+                while chosenIndex in indicesToDelete:
+                    randIdx = random.randint(0, endIndex)
+                    chosenIndex = potentialIndices[randIdx]
+                knownThresholdData.append(knownData[chosenIndex])
+                knownThresholdLabels.append(knownLabels[chosenIndex])
+                indicesToDelete.append(chosenIndex)
+        sortedIndices = sorted(indicesToDelete, reverse=True)
+        for index in sortedIndices:
             del knownData[index]
             del knownLabels[index]
 
-        #Getting single samples of data that the model will not be seen
-        #during training.
+        # Getting single samples of data that the model will not see
+        # during training.
         singleDataSamples = []
         singleDataSamplesLabels = []
         potentialIndicies = []
