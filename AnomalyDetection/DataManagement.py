@@ -96,6 +96,50 @@ class DatasetHandler():
 
         return classifierDictionaryList
 
+    def getSmallClasses(self, data, labels):
+        uniqueLabels = np.unique(labels)
+        labelsToRemove = []
+        dataToRemove = []
+        indicesToRemove = []
+
+        for uniqueLabel in uniqueLabels:
+            indices = []
+            index = 0
+            for label in labels:
+                if label == uniqueLabel:
+                    indices.append(index)
+                index += 1
+            if (len(indices) < 3):
+                for index in indices:
+                    labelsToRemove.append(labels[index])
+                    dataToRemove.append(data[index])
+                    indicesToRemove.append(index)
+
+        return indicesToRemove, dataToRemove, labelsToRemove
+
+    def removeSmallClasses(self, data, labels, indicesToRemove):
+        sortedIndicies = sorted(indicesToRemove, reverse=True)
+        for index in sortedIndicies:
+            del labels[index]
+            del data[index]
+
+        return data, labels
+
+    def getHoldoutIndices(self, labels, labelsToRemove):
+        uniqueLabels = np.unique(labels)
+        uniqueLabelsToRemove = np.unique(labelsToRemove)
+        index = 0
+        holdoutIndices = []
+
+        for label in uniqueLabels:
+            if label not in uniqueLabelsToRemove:
+                holdoutIndices.append(index)
+            index += 1
+
+        return holdoutIndices
+
+
+
 # Manages everything to do with finding the optimal threshold. DOES NOT deal with visualizing or interpreting the
 # data. DataProcessor will deal with that.
 class ThresholdManager():
@@ -185,7 +229,7 @@ class DataProcessor():
                    + ")_Holdout" + str(holdout) + "_Split" + str(split) + "_Threshold" \
                    + str(threshold) +"_UnknownHoldoutClasses1_KnownHoldoutSamples" \
                    + str(len(knownSingleDataPoints)) + "_PercentTrainingData" \
-                   + str(percentTraining) + ".jpg"
+                   + str(percentTraining) + ".pdf"
         plt.savefig(saveInfo, dpi = 300,
                     bbox_extra_artists = (lgd,), bbox_inches = 'tight')
         # plt.show()
@@ -295,8 +339,8 @@ class DataProcessor():
         percentTraining = round((len(knownTrain)/knownData), 2)
         saveInfo = "D:\ECOC\KnownUnknownAccuracies\Abalone\\" + "KNN_CWLength(" + str(
             len(codeBook[0])) + ")" + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
-            + str(len(knownSingleDataPoints))+ "_PercentTrainingData"+ str(percentTraining)  +".jpg"
+            + str(len(knownSingleDataPoints))+ "_PercentTrainingData"+ str(percentTraining)  +".pdf"
 
         plt.savefig(saveInfo, dpi = 300, bbox_extra_artists = (lgd,), bbox_inches = 'tight')
-        # plt.show()
+        plt.show()
         plt.clf()

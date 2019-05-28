@@ -38,6 +38,7 @@ class Splitter():
                 while chosenIndex in indicesToDelete:
                     randIdx = random.randint(0, endIndex)
                     chosenIndex = potentialIndices[randIdx]
+
                 knownThresholdData.append(knownData[chosenIndex])
                 knownThresholdLabels.append(knownLabels[chosenIndex])
                 indicesToDelete.append(chosenIndex)
@@ -80,20 +81,23 @@ class Splitter():
                singleDataSamplesLabels, knownData, knownLabels
 
     # Determines whether a label will be known, unknown, or holdout.
-    def assignLabel(self, labels, percentUnknown, holdoutIndex):
-        uniqueLabels = np.unique(labels).tolist()
-        numUnknown = int(len(uniqueLabels) * percentUnknown) # Casting to int because whole numbers are required.
+    def assignLabel(self, trimmedLabels, allLabels, percentUnknown, holdoutIndex):
+        uniqueTrimmedLabels = np.unique(trimmedLabels).tolist()
+        uniqueLabels = np.unique(allLabels).tolist()
+        numUnknown = int(len(uniqueTrimmedLabels) * percentUnknown) # Casting to int because whole numbers are required.
 
         #Remove holdout class from selection of labels.
+        # We select from the unique labels that haven't been trimmed yet because the indices that have been
+        # chosen to be holdouts correspond to the list of all unique labels.
         holdoutClass = uniqueLabels[holdoutIndex]
-        del uniqueLabels[holdoutIndex]
-
-        #Randomly select which classes will be unknown.
-        listOfUnknownClasses = random.sample(uniqueLabels, numUnknown)
-
+        uniqueTrimmedLabels.remove(holdoutClass)
+        # Randomly select which classes will be unknown.
+        # We use the trimmed set of labels now becausae we only want to use classes that have enough
+        # samples of data.
+        listOfUnknownClasses = random.sample(uniqueTrimmedLabels, numUnknown)
         #Create list of what the known classes will be.
         listOfKnownClasses = []
-        for label in uniqueLabels:
+        for label in uniqueTrimmedLabels:
             if label not in listOfUnknownClasses:
                 listOfKnownClasses.append(label)
 
@@ -107,7 +111,6 @@ class Splitter():
         unknownData = []
         unknownLabels = []
         indicesToDelete = []
-
         #Separate holdout data from all data
         for index in range(0, len(data)):
             if allOrigLabels[index] == holdoutClass:
