@@ -30,8 +30,6 @@ class Splitter():
             # Randomly selecting 20% of that data to be used as the holdout
             endIndex = len(potentialIndices) - 1
             numDataSamples = math.ceil(len(potentialIndices)*HOLDOUT_AMOUNT)
-            if numDataSamples == 1:
-                numDataSamples += 1
             for i in range(numDataSamples):
                 randIdx = random.randint(0, endIndex)
                 chosenIndex = potentialIndices[randIdx]
@@ -48,7 +46,7 @@ class Splitter():
             del knownLabels[index]
 
         # Getting single samples of data that the model will not see
-        # during training.
+        # during training. Used for testing the threshold.
         singleDataSamples = []
         singleDataSamplesLabels = []
         potentialIndicies = []
@@ -90,6 +88,8 @@ class Splitter():
         # We select from the unique labels that haven't been trimmed yet because the indices that have been
         # chosen to be holdouts correspond to the list of all unique labels.
         holdoutClass = uniqueLabels[holdoutIndex]
+        # Remove the chosen holdout from the list of trimmed labels so that the holdout cannot be chosen as a known or
+        # unknown class.
         uniqueTrimmedLabels.remove(holdoutClass)
         # Randomly select which classes will be unknown.
         # We use the trimmed set of labels now becausae we only want to use classes that have enough
