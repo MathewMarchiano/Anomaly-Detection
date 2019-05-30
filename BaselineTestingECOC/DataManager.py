@@ -123,5 +123,34 @@ class DataManager():
 
         return originalLabels
 
+    def getSmallClasses(self, data, labels):
+        uniqueLabels = np.unique(labels)
+        labelsToRemove = []
+        dataToRemove = []
+        indicesToRemove = []
+
+        for uniqueLabel in uniqueLabels:
+            indices = []
+            index = 0
+            for label in labels:
+                if label == uniqueLabel:
+                    indices.append(index)
+                index += 1
+            if (len(indices) < 3):
+                for index in indices:
+                    labelsToRemove.append(labels[index])
+                    dataToRemove.append(data[index])
+                    indicesToRemove.append(index)
+
+        return indicesToRemove, dataToRemove, labelsToRemove
+
+    def removeSmallClasses(self, data, labels, indicesToRemove):
+        sortedIndicies = sorted(indicesToRemove, reverse=True)
+        for index in sortedIndicies:
+            del labels[index]
+            del data[index]
+
+        return data, labels
+
 
 
