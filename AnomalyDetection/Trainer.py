@@ -94,7 +94,6 @@ class Trainer():
 
         return UpdatedList, minHamList
 
-
     # Gets accuracy of predicted codewords when compared to
     # actual (i.e. validation) codewords
     def compare(self, predictions, actual):

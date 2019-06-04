@@ -138,8 +138,6 @@ class DatasetHandler():
 
         return holdoutIndices
 
-
-
 # Manages everything to do with finding the optimal threshold. DOES NOT deal with visualizing or interpreting the
 # data. DataProcessor will deal with that.
 class ThresholdManager():
@@ -191,7 +189,6 @@ class ThresholdManager():
 
         return optimalThreshold, lowestDifference, highestKnownAcc, highestUnknownAcc
 
-
 # Deals with processing the data retrieved from training. Includes graphing.
 class DataProcessor():
     # Graphs the number of instances of a particular hamming distance. Distinguishes between
@@ -200,7 +197,7 @@ class DataProcessor():
                              codebookNum, split, knownAcc,
                              unknownAcc, seed, holdout, allData,
                              unknownData, knownTrain, codeBook,
-                             knownSingleDataPoints):
+                             knownSingleDataPoints, saveFolderPath, selectedClassifier):
         bins = np.arange(20)
         ax = plt.subplot(111)
         thresholdText = "Optimal Threshold: " + str(threshold)
@@ -225,7 +222,8 @@ class DataProcessor():
 
         knownData = len(allData) - len(unknownData)
         percentTraining = round((len(knownTrain) / knownData), 2)
-        saveInfo = "D:\ECOC\HammingDistanceHistograms\Abalone\\" + "KNN_CWLength(" + str(len(codeBook[0])) \
+        models = ["SVM", "DT", "LDA", "KNN"]
+        saveInfo = saveFolderPath + "\\" + models[selectedClassifier - 1] +"_CWLength(" + str(len(codeBook[0])) \
                    + ")_Holdout" + str(holdout) + "_Split" + str(split) + "_Threshold" \
                    + str(threshold) +"_UnknownHoldoutClasses1_KnownHoldoutSamples" \
                    + str(len(knownSingleDataPoints)) + "_PercentTrainingData" \
@@ -238,7 +236,7 @@ class DataProcessor():
     # Graphs the holdout class's HDs against the threshold.
     def graphHoldoutHDs(self, threshold, holdoutHammingDistances,
                         accuracy, codebookNum, split,
-                        seed, holdout):
+                        seed, holdout, saveFolderPath, selectedClassifier):
         bins = np.arange(20)
 
         thresholdText = "Optimal Threshold: " + str(threshold)
@@ -252,15 +250,16 @@ class DataProcessor():
         plt.ylabel("Frequency")
         plt.title(title)
         plt.legend(loc='upper right')
-        # plt.savefig("D:\ECOC\Pictures\HoldoutClassThresholdComparions_LetterRecognition\HoldoutTest\\" + str(holdout) + "_" + str(split)
-        #             + "_" + str(threshold) + "_" + str(codebookNum) + "_DT.jpg")
+        models = ["SVM", "DT", "LDA", "KNN"]
+        plt.savefig(saveFolderPath + "\\" + str(holdout) + "_" + str(split)
+                    + "_" + str(threshold) + "_" + str(codebookNum) + "_" + models[selectedClassifier - 1] + ".jpg")
         # plt.show()
         plt.clf()
 
     # Graphs the single data samples' hamming distances against the threshold.
     def singleDataHoldoutHistogram(self, threshold, holdoutHammingDistances,
                                    accuracy, codebookNum, split,
-                                   seed, holdout):
+                                   seed, holdout, saveFolderPath, selectedClassifier):
         bins = np.arange(20)
 
         thresholdText = "Optimal Threshold: " + str(threshold)
@@ -274,9 +273,10 @@ class DataProcessor():
         plt.ylabel("Frequency")
         plt.title(title)
         plt.legend(loc='upper right')
-        # plt.savefig("D:\ECOC\Pictures\HoldoutClassThresholdComparions_LetterRecognition\OldHoldoutTest\\" + str(holdout) + "_" + str(split)
-        #             + "_" + str(threshold) + "_" + str(codebookNum) + "_DT.jpg")
-        # plt.show()
+        models = ["SVM", "DT", "LDA", "KNN"]
+        plt.savefig(saveFolderPath + "\\" + str(holdout) + "_" + str(split)
+                    + "_" + str(threshold) + "_" + str(codebookNum) + "_" + models[selectedClassifier - 1] +".jpg")
+        plt.show()
         plt.clf()
 
     # Calculates the accuracy of the predictions made on the holdout class's data. Ideally, the hamming
@@ -306,7 +306,7 @@ class DataProcessor():
     def accuraciesPlot(self, knownAccMinDict, knownAccMaxDict,
                        unknownAccMinDict, unknownAccMaxDict, knownMean,
                        unknownMean, codeBook, knownTrain, allData,
-                       unknownData, knownSingleDataPoints):
+                       unknownData, knownSingleDataPoints, saveFolderPath, selectedModel):
         ax = plt.subplot(111)
 
         # Representation of min and max values.
@@ -337,9 +337,12 @@ class DataProcessor():
 
         knownData = len(allData) - len(unknownData)
         percentTraining = round((len(knownTrain)/knownData), 2)
-        saveInfo = "D:\ECOC\KnownUnknownAccuracies\Abalone\\" + "KNN_CWLength(" + str(
+        models = ["SVM", "DT", "LDA", "KNN"] # Corresponds to the number assigned for each classifier in Trainer.py
+        # selectedModel has 1 subtracted from it because the models in the Trainer class are assigned with numbers
+        # 1 - 4.
+        saveInfo = saveFolderPath + "\\" + models[selectedModel - 1] + "_CWLength(" + str(
             len(codeBook[0])) + ")" + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
-            + str(len(knownSingleDataPoints))+ "_PercentTrainingData"+ str(percentTraining)  +".pdf"
+            + str(len(knownSingleDataPoints))+ "_PercentTrainingData"+ str(percentTraining)  + ".pdf"
 
         plt.savefig(saveInfo, dpi = 300, bbox_extra_artists = (lgd,), bbox_inches = 'tight')
         plt.show()
