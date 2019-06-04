@@ -213,17 +213,14 @@ def loop(listOfCBs, listOfThresholds, listOfNewSplits, dataset,
              for holdout in holdoutIndices:
                  allData, allOriginalLabels = dh.getData(dataset, labelCol, beginDataCol, endDataCol)
                  savedOriginalLabels = allOriginalLabels.copy() # All labels required for assignLabel()
-                 indicesToRemove, dataToRemove, labelsToRemove = dh.getSmallClasses(allData, allOriginalLabels)
-                 trimmedAllData, trimmedAllOriginalLabels = dh.removeSmallClasses(allData, allOriginalLabels, indicesToRemove)
-                 scaledData = dh.preprocessData(trimmedAllData)
-                 ECOCLabels, labelDictionary = dh.assignCodeword(savedOriginalLabels)
-                 binaryClassifiers = dh.binarizeLabels(labelDictionary)
+                 trimmedAllData, trimmedAllOriginalLabels, scaledData, codewordColumns = \
+                                              processOriginalData(dh, allData, allOriginalLabels, savedOriginalLabels)
                  listOfUnknownClasses, listOfKnownClasses, holdoutClass = \
                      splitter.assignLabel(trimmedAllOriginalLabels, savedOriginalLabels, split, holdout)
                  knownValidationData, knownValidationLabels, singleDataSamples, singleDataSamplesLabels, knownData, \
                  knownLabels, unknownData, unknownLabels, holdoutData, holdoutLabels \
                      = splitter.splitDataAndLabels(scaledData, trimmedAllOriginalLabels, listOfUnknownClasses, holdoutClass)
-                 knownECOCLabels = trainer.makeTrainingLabels(binaryClassifiers, knownLabels)
+                 knownECOCLabels = trainer.makeTrainingLabels(codewordColumns, knownLabels)
                  listOfClassifiers = trainer.trainClassifiers(knownData, knownECOCLabels, classifier)
 
                  # Getting predictions on all relevant data
@@ -264,28 +261,19 @@ def loop(listOfCBs, listOfThresholds, listOfNewSplits, dataset,
                                          split, knownHoldoutDataThresholdAcc, unknownHoldoutDataThresholdAcc,
                                          12, holdoutClass, trimmedAllData, unknownData, knownData, codebook, singleDataSamples)
 
-             print("Mean of Optimal Thresholds:", np.mean(optimalThresholds))
-             print("Max Threshold:", max(optimalThresholds))
-             print("Min Threshold:", min(optimalThresholds))
-             print("Thresholds Variance:", np.var(optimalThresholds), "\n")
+
+             printResults(unknownAccuracies, knownAccuracies, optimalThresholds)
+
              thresholdMaxDictionary[split] = max(optimalThresholds)
              thresholdMinDictionary[split] = min(optimalThresholds)
              thresholdVarDictionary[split] = np.var((optimalThresholds))
              thresholdMeanDictionary[split] = np.mean(optimalThresholds)
 
-             print("Mean of Known Accuracies:", np.mean(knownAccuracies))
-             print("Max Known Accuracy:", max(knownAccuracies))
-             print("Min Known Accuracy:", min(knownAccuracies))
-             print("Known Accuracies Variance:", np.var(knownAccuracies), "\n")
              knownMaxAccDictionary[split] = max(knownAccuracies)
              knownMinAccDictionay[split] = min(knownAccuracies)
              knownVarDictionary[split] = np.var(knownAccuracies)
              knownMeanDictionary[split] = np.mean(knownAccuracies)
 
-             print("Mean of Unknown Accuracies:", np.mean(unknownAccuracies))
-             print("Max Unknown Accuracy:", max(unknownAccuracies))
-             print("Min Unknown Accuracy:", min(unknownAccuracies))
-             print("Unknown Accuracies Variance:", np.var(unknownAccuracies), "\n")
              unknownMaxAccDictionary[split] = max(unknownAccuracies)
              unknownMinAccDictionary[split] = min(unknownAccuracies)
              unknownVarDictionary[split] = np.var(unknownAccuracies)
@@ -309,6 +297,32 @@ def getHoldoutIndices(dataset, labelsColumn, dataBeginIndex, dataEndIndex):
     holdoutIndices = dh.getHoldoutIndices(labels, labelsToRemove)
     return holdoutIndices
 
+# Prints information about each of the accuracies and thresholds for a particular run.
+# The values printed are the values that will be stored
+def printResults(unknownAccuracies, knownAccuracies, optimalThresholds):
+    print("Mean of Optimal Thresholds:", np.mean(optimalThresholds))
+    print("Max Threshold:", max(optimalThresholds))
+    print("Min Threshold:", min(optimalThresholds))
+    print("Thresholds Variance:", np.var(optimalThresholds), "\n")
+
+    print("Mean of Known Accuracies:", np.mean(knownAccuracies))
+    print("Max Known Accuracy:", max(knownAccuracies))
+    print("Min Known Accuracy:", min(knownAccuracies))
+    print("Known Accuracies Variance:", np.var(knownAccuracies), "\n")
+
+    print("Mean of Unknown Accuracies:", np.mean(unknownAccuracies))
+    print("Max Unknown Accuracy:", max(unknownAccuracies))
+    print("Min Unknown Accuracy:", min(unknownAccuracies))
+    print("Unknown Accuracies Variance:", np.var(unknownAccuracies), "\n")
+
+def processOriginalData(dataHandler, data, labels, savedLabels):
+    indicesToRemove, dataToRemove, labelsToRemove = dataHandler.getSmallClasses(data, labels)
+    trimmedAllData, trimmedAllOriginalLabels = dataHandler.removeSmallClasses(data, labels, indicesToRemove)
+    scaledData = dataHandler.preprocessData(trimmedAllData)
+    ECOCLabels, labelDictionary = dataHandler.assignCodeword(savedLabels)
+    binaryClassifiers = dataHandler.binarizeLabels(labelDictionary)
+
+    return trimmedAllData, trimmedAllOriginalLabels, scaledData, binaryClassifiers
 
 loop(listOfCBs, listOfThresholds, listOfSplits, dataset, -1, 1, 7, 1)
 
