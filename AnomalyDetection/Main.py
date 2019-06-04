@@ -175,8 +175,8 @@ listOfSplits = [0.10, .15, .20, .25]
 listOfCBs = [cb, cb2, cb3]
 
 
-def loop(listOfCBs, listOfThresholds, listOfNewSplits, dataset,
-         labelCol, beginDataCol, endDataCol, classifier, folderPathAcc, folderPathHDs):
+def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, dataset,
+                             labelCol, beginDataCol, endDataCol, classifier, folderPathAcc, folderPathHDs):
 
      holdoutIndices = getHoldoutIndices(dataset, labelCol, beginDataCol, endDataCol)
      iterationCount = 1
@@ -338,5 +338,5 @@ def getPredictions(unknownData, holdoutData, singleDataSamples, knownValidationD
 
 folderPathAcc = "D:\ECOC\KnownUnknownAccuracies\Abalone"
 folderPathHDs = "D:\ECOC\HammingDistanceHistograms\Abalone"
-loop(listOfCBs, listOfThresholds, listOfSplits, dataset, -1, 1, 7, 2, folderPathAcc, folderPathHDs)
+runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfSplits, dataset, -1, 1, 7, 2, folderPathAcc, folderPathHDs)
 
