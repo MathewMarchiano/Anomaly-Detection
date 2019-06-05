@@ -1,0 +1,11 @@
+Codebook_1
+Codebook_2
+Codebook_3
+Dataset_Path
+List_Of_Thresholds
+List_Of_Splits
+Accuracies_Graph_File_Path
+Hamming_Distances_Graph_File_Path
+Labels_Column
+Data_Begin_Column
+Data_End_Column
