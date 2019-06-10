@@ -227,7 +227,7 @@ class DataProcessor():
                    + ")_Holdout" + str(holdout) + "_Split" + str(split) + "_Threshold" \
                    + str(threshold) +"_UnknownHoldoutClasses1_KnownHoldoutSamples" \
                    + str(len(knownSingleDataPoints)) + "_PercentTrainingData" \
-                   + str(percentTraining) + ".pdf"
+                   + str(percentTraining) + ".png"
         plt.savefig(saveInfo, dpi = 300,
                     bbox_extra_artists = (lgd,), bbox_inches = 'tight')
         # plt.show()
@@ -252,7 +252,7 @@ class DataProcessor():
         plt.legend(loc='upper right')
         models = ["SVM", "DT", "LDA", "KNN"]
         plt.savefig(saveFolderPath + "\\" + str(holdout) + "_" + str(split)
-                    + "_" + str(threshold) + "_" + str(codebookNum) + "_" + models[selectedClassifier - 1] + ".jpg")
+                    + "_" + str(threshold) + "_" + str(codebookNum) + "_" + models[selectedClassifier - 1] + ".png")
         # plt.show()
         plt.clf()
 
@@ -275,7 +275,7 @@ class DataProcessor():
         plt.legend(loc='upper right')
         models = ["SVM", "DT", "LDA", "KNN"]
         plt.savefig(saveFolderPath + "\\" + str(holdout) + "_" + str(split)
-                    + "_" + str(threshold) + "_" + str(codebookNum) + "_" + models[selectedClassifier - 1] +".jpg")
+                    + "_" + str(threshold) + "_" + str(codebookNum) + "_" + models[selectedClassifier - 1] +".png")
         plt.show()
         plt.clf()
 
@@ -306,7 +306,8 @@ class DataProcessor():
     def accuraciesPlot(self, knownAccMinDict, knownAccMaxDict,
                        unknownAccMinDict, unknownAccMaxDict, knownMean,
                        unknownMean, codeBook, knownTrain, allData,
-                       unknownData, knownSingleDataPoints, saveFolderPath, selectedModel):
+                       unknownData, knownSingleDataPoints, saveFolderPath, selectedModel,
+                       listOfSplits):
         ax = plt.subplot(111)
 
         # Representation of min and max values.
@@ -325,6 +326,8 @@ class DataProcessor():
         ax.plot(list(unknownMean.keys()), list(unknownMean.values()), marker='o', color='cyan',
                  label='Unknown Mean', linestyle = '--')
 
+        plt.xticks(listOfSplits)
+
         ax.set_title("Prediction Accuracy per Split")
         ax.set_xlabel("Percent Unknown")
         ax.set_ylabel("Accuracy")
@@ -342,7 +345,7 @@ class DataProcessor():
         # 1 - 4.
         saveInfo = saveFolderPath + "\\" + models[selectedModel - 1] + "_CWLength(" + str(
             len(codeBook[0])) + ")" + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
-            + str(len(knownSingleDataPoints))+ "_PercentTrainingData"+ str(percentTraining)  + ".pdf"
+            + str(len(knownSingleDataPoints))+ "_PercentTrainingData"+ str(percentTraining)  + ".png"
 
         plt.savefig(saveInfo, dpi = 300, bbox_extra_artists = (lgd,), bbox_inches = 'tight')
         plt.show()
