@@ -80,6 +80,7 @@ class Trainer():
         for predictedCode in codewords:
             minHam = len(predictedCode)
             for actualCode in codebook:
+                # GETTING MINIMUM HAMMING DISTANCE
                 hammingDistance = 0
                 for counter in range(0, len(predictedCode)):
                     if actualCode[counter] != predictedCode[counter]:
@@ -93,6 +94,7 @@ class Trainer():
 
 
         return UpdatedList, minHamList
+
 
     # Gets accuracy of predicted codewords when compared to
     # actual (i.e. validation) codewords

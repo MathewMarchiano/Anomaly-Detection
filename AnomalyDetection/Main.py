@@ -214,12 +214,10 @@ def parseDatasetInfoFile(textFile):
     return codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
            labelsColumn, dataBeginColumn, dataEndColumn
 
-
-# Setting up variables:
 codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
                     labelsColumn, dataBeginColumn, dataEndColumn = \
-                    parseDatasetInfoFile("D:\ECOC\ECOC_v2\DatasetParameterFiles\ParameterValueFile_Abalone_Hadamard.txt")
-listOfCBs = [codebook1, codebook2, codebook3]
+                    parseDatasetInfoFile("D:\ECOC\ECOC_v2\DatasetParameterFiles\ParameterValueFile_LowResolutionSpectrometer_Hadamard.txt")
+listOfCBs = [codebook2, codebook3]
 
 runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
                          dataBeginColumn, dataEndColumn, 1, filePathAccGraph, filePathHDsGraph)
