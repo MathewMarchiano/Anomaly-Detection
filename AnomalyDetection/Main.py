@@ -5,7 +5,9 @@ from AnomalyDetection.Splitter import Splitter
 from AnomalyDetection.Trainer import Trainer
 import numpy as np
 import ast
+import warnings
 
+warnings.filterwarnings("ignore")
 def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, dataset,
                              labelCol, beginDataCol, endDataCol, classifier, folderPathAcc, folderPathHDs):
 
@@ -77,7 +79,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  unknownHoldoutDataThresholdAcc = dp.unknownThresholdTest(holdoutClassHDs, optimalThreshold)
 
 
-                 print("Codebook:", codebookNum, "split:", split, "iteration:", iterationCount)
+                 #print("Codebook:", codebookNum, "split:", split, "iteration:", iterationCount)
                  iterationCount += 1
 
                  optimalThresholds.append(optimalThreshold)
@@ -92,7 +94,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                                          singleDataSamples, folderPathHDs, classifier)
 
 
-             printResults(unknownAccuracies, knownAccuracies, optimalThresholds)
+             printResults(unknownAccuracies, knownAccuracies, optimalThresholds, codebookNum, split)
 
              thresholdMaxDictionary[split] = max(optimalThresholds)
              thresholdMinDictionary[split] = min(optimalThresholds)
@@ -130,7 +132,8 @@ def getHoldoutIndices(dataset, labelsColumn, dataBeginIndex, dataEndIndex):
 
 # Prints information about each of the accuracies and thresholds for a particular run.
 # The values printed are the values that will be stored
-def printResults(unknownAccuracies, knownAccuracies, optimalThresholds):
+def printResults(unknownAccuracies, knownAccuracies, optimalThresholds, codebookNum, split):
+    print("Codebook:", codebookNum, "split:", split)
     print("Mean of Optimal Thresholds:", np.mean(optimalThresholds))
     print("Max Threshold:", max(optimalThresholds))
     print("Min Threshold:", min(optimalThresholds))
@@ -216,9 +219,20 @@ def parseDatasetInfoFile(textFile):
 
 codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
                     labelsColumn, dataBeginColumn, dataEndColumn = \
-                    parseDatasetInfoFile("D:\ECOC\ECOC_v2\DatasetParameterFiles\ParameterValueFile_LowResolutionSpectrometer_Hadamard.txt")
-listOfCBs = [codebook2, codebook3]
+                    parseDatasetInfoFile("D:\ECOC\ECOC_v2\DatasetParameterFiles\ParameterValueFile_LowResolutionSpectrometer_Random.txt")
+listOfCBs = [codebook1, codebook2, codebook3]
 
+print("Please select which classifier you would like to use:")
+print("\tFor SVM, enter 1.")
+print("\tFor DT, enter 2.")
+print("\tFor LDA, enter 3.")
+print("\tFor KNN, enter 4.")
+chosenClassifier = int(input())
+classifiers = ["SVM", "DT", "LDA", "KNN"]
+print(classifiers[chosenClassifier - 1], "chosen.")
+print("Running...")
 runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
-                         dataBeginColumn, dataEndColumn, 1, filePathAccGraph, filePathHDsGraph)
+                         dataBeginColumn, dataEndColumn, chosenClassifier, filePathAccGraph, filePathHDsGraph)
+
+
 
