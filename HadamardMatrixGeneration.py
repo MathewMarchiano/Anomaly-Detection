@@ -1,11 +1,19 @@
 # *****************************************
 # AUTHOR: MOHAMMED SAROSH KHAN
-# VERSION: 9 APRIL 2019
+# VERSION: 23 JUNE 2019
 # *****************************************
 from scipy.linalg import hadamard
 import matplotlib.pyplot as hadGraph
 import itertools
-import numpy
+import random
+import numpy as np
+
+def hammingWeight(code):
+    weight = 0
+    for b in code:
+        weight+=b
+    return weight
+
 #Produces a Hadamard of 0's and 1's such that n=2^k
 def MakeBinaryHadamard(n):
     matrix = []
@@ -60,10 +68,12 @@ def ProduceSquare(length):
 def truncateRows(matrix, t):
     a = 0
     w_on = matrix
+    removalDictionary = []
     while (a<t):
+        removalDictionary.append(w_on[0])
         w_on.remove(w_on[0])
         a+=1
-    return w_on
+    return w_on, removalDictionary
 
 #For Writing matrices to file
 def writetoFile(matrix, name):
@@ -72,37 +82,35 @@ def writetoFile(matrix, name):
         file.write(str(b) + "\n")
     file.write("\n")
 
+def generateRandomVector(length):
+    vector = []
+    onePerm = 0
+    if length%2==0:
+        onePerm = length/2
+    else:
+        onePerm = (length+1)/2
+    for i in range(int(onePerm)):
+        vector.append(1);
+    while (len(vector)<length):
+        vector.insert(random.randrange(0, length-onePerm),0)
+   # for i in range(length):
+   #     vector.append(random.choice([0, 1]))
+   # if (hammingWeight(vector)==0 or hammingWeight(vector)==length):
+   #     generateRandomVector(length)
+    return vector
 
-#Helper routine for finding appropriate subsets
-#Checks for a column/row of all 1's or 0's
-def checkWeightsForAllExtrema(codes):
-    columns = transpose(codes)
-    rowLength = len(codes[0])
-    colLength = len(columns[0])
-    for code in codes:
-        weight = 0
-        for bit in code:
-            weight+=bit
-        if(weight== rowLength or weight == 0):
-            return 0
-    for code in columns:
-        weight = 0
-        for bit in code:
-            weight+=bit
-        if (weight == colLength or weight ==0):
-            return 0
-    return 1
+def FilterReplaceMatrices(matrix):
 
-#This is for Finding all 1's or 0's and removing them
-#Pass in a codebook, and the size (as a number of elements in the codebook)
-def ReturnLightMatrix(matrix, size):
-    testResult = -1
-    for i in (itertools.combinations(matrix, size)):
-        print(str(i) + " " + str(transpose(i)))
-        if (checkWeightsForAllExtrema(i)==1):
-            testResult=1
-            return i
-    return testResult
+    for i in range (len(matrix)):
+        weight = hammingWeight(matrix[i])
+        if weight==0 or weight== len(matrix[i]):
+            matrix[i]=generateRandomVector(len(matrix[0]))
+    matrixColumnOrientation = transpose(matrix)
+    for i in range (len(matrixColumnOrientation)):
+        weight = hammingWeight(matrixColumnOrientation[i])
+        if weight==0 or weight == len(matrixColumnOrientation):
+            matrixColumnOrientation[i]=generateRandomVector(len(matrixColumnOrientation[0]))
+    return transpose(matrixColumnOrientation)
 
 #Generates a Matrix of your choosing
 #Note: codeLength>= numberClasses for all matrices!
@@ -111,7 +119,8 @@ def GenerateMatrix(numberClasses, codeLength):
         else codeLength
     squareSeed = ProduceSquare(squareSeedWidth)
     linearRowTruncation = codeLength-numberClasses
-    finalMatrix = truncateRows(squareSeed, linearRowTruncation)
+    preMatrix, removalDictionary = truncateRows(squareSeed, linearRowTruncation)
+    finalMatrix = FilterReplaceMatrices(preMatrix)
     return finalMatrix
 
 #Same as above but writes to file
@@ -120,90 +129,42 @@ def GenerateMatrixFILE(numberClasses, codeLength):
         else codeLength
     squareSeed = ProduceSquare(squareSeedWidth)
     linearRowTruncation = codeLength-numberClasses
-    finalMatrix = truncateRows(squareSeed, linearRowTruncation)
+    preMatrix, removalDictionary = truncateRows(squareSeed, linearRowTruncation)
+    finalMatrix = FilterReplaceMatrices(preMatrix)
     writetoFile(finalMatrix, ""+str(numberClasses) + "x"+str(codeLength))
     return finalMatrix
 
+# Checks the columns of a codebook for columns of all 0's or 1's (which would be very bad).
+def checkColumns(matrix):
+    columns = np.transpose(matrix)
+    columnsAsList = columns.tolist() # np-arrays don't have the function "count()" which is used below.
+    valid = True
+    for i in range(len(columnsAsList)):
+        if columnsAsList[i].count(0) == len(columnsAsList[i]):
+            print("Column of all 0's. " + str(i))
+            valid = False
+        if columnsAsList[i].count(1) == len(columnsAsList[i]):
+            print("Column of all 1's. " + str(i))
+            valid = False
+    if valid:
+        print("No columns of all 0's or 1's.")
 
-#--- Testing Routines ---
+#print(MakeBinaryHadamard(16))
+#writetoFile(MakeBinaryHadamard(16), "16x16")
+#writetoFile(transpose(MakeBinaryHadamard(16)), "16x16t")
+#GenerateMatrixFILETT(28, 42)
+#writetoFile(transpose(GenerateMatrixFILETT(28, 42)), "28x42t")
+#checkColumns(GenerateMatrixTT(28, 42))
+#print(GenerateMatrix(12, 11))
 
-def hammingDistance(a, b):  # Finds the hamming distance between two codewords
-    distance = 0
-    #print(len(a), len(b))
-    for i in range(len(a)):
-        distance += (a[i] ^ b[i])
-    return distance
+testPack = []
 
-def generateHammingDistances(matrix):
-    size = len(matrix)
-    distances = []
-    for i in range (size-1):
-        for j in range((i+1), size):
-            distances.append(hammingDistance(matrix[i], matrix[j]))
-    return distances
+testPack.append(GenerateMatrix(28, 42))
+testPack.append(GenerateMatrix(28, 56))
+testPack.append(GenerateMatrix(30, 45))
+testPack.append(GenerateMatrix(30, 60))
+testPack.append(GenerateMatrix(48, 72))
+testPack.append(GenerateMatrix(48, 96))
 
-def Graph(yvals):
-    xvals = []
-    for i in range(len(yvals)):
-        xvals.append(i)
-    hadGraph.plot(xvals, yvals)
-    hadGraph.show()
-
-def findMin(values):
-    min = values[0]
-    for i in values:
-        if (i<min):
-            min = i;
-    return min
-
-def findMax(values):
-    max = values[0]
-    for i in values:
-        if (i>max):
-            max = i;
-    return max
-
-def testingData(start, bound):
-    lower = start
-    upper = start
-    values = []
-    xVals = []
-    while (upper<=bound):
-        values.append(findMin(generateHammingDistances(GenerateMatrix(lower, upper))))
-        xVals.append(upper)
-        upper+=1
-    hadGraph.plot(xVals, values)
-    hadGraph.xlabel("Length of Codewords")
-    hadGraph.ylabel("Minimum Hamming Distance")
-    hadGraph.title("Truncation v Distance")
-    hadGraph.show()
-
-
-def hammingWeight(code):
-    weight = 0
-    for b in code:
-        weight+=b
-    return weight
-
-def checkWeights(codes, HWmin, HWmax):
-    for i in range(len(codes[0])):
-        for code in codes:
-            weight = hammingWeight(code)
-            if (weight>= HWmin and weight<=HWmax):
-                return 1
-    return 0
-
-
-def findMaxHammingWeight(matrix):
-    max = hammingWeight(matrix[0])
-    min = hammingWeight(matrix[0])
-    data = []
-    for code in matrix:
-        weight = hammingWeight(code)
-        if (weight>max):
-            max = weight
-        if(weight<min):
-            min = weight
-    data.append(min)
-    data.append(max)
-    return max
+for problem in testPack:
+    checkColumns(problem)
