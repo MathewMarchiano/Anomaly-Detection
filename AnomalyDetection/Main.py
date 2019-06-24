@@ -110,7 +110,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
              unknownMinAccDictionary[split] = min(unknownAccuracies)
              unknownVarDictionary[split] = np.var(unknownAccuracies)
              unknownMeanDictionary[split] = np.mean((unknownAccuracies))
-
+             dp.getROC(unknownAccuracies, knownAccuracies)
              optimalThresholds = []
              unknownAccuracies = []
              knownAccuracies = []
@@ -219,7 +219,16 @@ def parseDatasetInfoFile(textFile):
 
 codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
                     labelsColumn, dataBeginColumn, dataEndColumn = \
-                    parseDatasetInfoFile("D:\ECOC\ECOC_v2\DatasetParameterFiles\ParameterValueFile_LowResolutionSpectrometer_Random.txt")
+                    parseDatasetInfoFile("D:\ECOC\ECOC_v2\DatasetParameterFiles\ParameterValueFile_LowResolutionSpectrometer_Hadamard.txt")
+listOfCBs = [codebook1, codebook2, codebook3]
+
+print("Please enter the path to your parameter value file")
+parameterValueFile = input().replace('"', '')
+print(parameterValueFile)
+
+codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
+                    labelsColumn, dataBeginColumn, dataEndColumn = \
+                    parseDatasetInfoFile(parameterValueFile)
 listOfCBs = [codebook1, codebook2, codebook3]
 
 print("Please select which classifier you would like to use:")
@@ -233,6 +242,3 @@ print(classifiers[chosenClassifier - 1], "chosen.")
 print("Running...")
 runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
                          dataBeginColumn, dataEndColumn, chosenClassifier, filePathAccGraph, filePathHDsGraph)
-
-
-
