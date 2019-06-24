@@ -5,6 +5,7 @@ from numpy import genfromtxt
 import random
 from sklearn.preprocessing.imputation import Imputer
 import matplotlib.pyplot as plt
+from sklearn import metrics
 
 # Retrieves and processes the data from a given CSV file or web address. Also deals with relabeling original labels into
 # labels dictated by the classifiers of a given codebook.
@@ -189,6 +190,34 @@ class ThresholdManager():
 
         return optimalThreshold, lowestDifference, highestKnownAcc, highestUnknownAcc
 
+    def testAllThresholds(self, listOfThresholds, knownHDs, unknownHDs):
+        knownAccuracies = []
+        unknownAccuracies = []
+        for threshold in listOfThresholds:
+            knownAccuracy, unknownAccuracy, difference = self.getAccuracy(threshold, knownHDs, unknownHDs)
+            knownAccuracies.append(knownAccuracy)
+            unknownAccuracies.append(unknownAccuracy)
+
+        return knownAccuracies, unknownAccuracies
+
+    def averageThresholdAccuracies(self, listOfAccuracies):
+        averagedAccuracyList = []
+        # listOfAccuracies contains a list for every holdout. Within every list is a list
+        # of accuracies for each potential threshold. Bits gives us the number of thresholds there are.
+        numThresholdAccuracies = len(listOfAccuracies[0])
+        for thresholdAccuracyIndex in range(numThresholdAccuracies):
+            tempAccuracyList = []
+            for holdoutAccuracyList in listOfAccuracies:
+                tempAccuracyList.append(holdoutAccuracyList[thresholdAccuracyIndex])
+            averagedAccuracyList.append(np.mean(tempAccuracyList))
+
+        return averagedAccuracyList
+
+
+
+
+
+
 # Deals with processing the data retrieved from training. Includes graphing.
 class DataProcessor():
     # Graphs the number of instances of a particular hamming distance. Distinguishes between
@@ -289,7 +318,7 @@ class DataProcessor():
             if hammingDistance > threshold:
                 correctPredictionAmount += 1
 
-        return correctPredictionAmount / total
+        return (correctPredictionAmount / total)
 
     # Calculates the accuracy of the predictions made on the single samples of data taken from the known
     # data split (used for training). Ideally, the hamming distances should be less than the value of the
@@ -301,7 +330,7 @@ class DataProcessor():
             if hammingDistance < threshold:
                 correctPredictionAmount += 1
 
-        return correctPredictionAmount / total
+        return (correctPredictionAmount / total)
 
     def accuraciesPlot(self, knownAccMinDict, knownAccMaxDict,
                        unknownAccMinDict, unknownAccMaxDict, knownMean,
@@ -348,5 +377,34 @@ class DataProcessor():
             + str(len(knownSingleDataPoints))+ "_PercentTrainingData"+ str(percentTraining)  + ".png"
 
         plt.savefig(saveInfo, dpi = 300, bbox_extra_artists = (lgd,), bbox_inches = 'tight')
+        plt.show()
+        plt.clf()
+
+    def getROC(self, unknownAccs, knownAccs, split, codeBook, saveFolderPath, selectedModel, bestKnownAccs,
+                                                                            bestUnknownAccs, averagedOptimalThreshold):
+        fprList = []
+        bestFPR = 1 - bestUnknownAccs
+        # False Positive Rate is = 1 - specificity
+        for acc in unknownAccs:
+            fprList.append(1 - acc)
+        print(np.max(fprList))
+        ax = plt.subplot(111)
+        ax.set_title("ROC")
+        ax.set_xlabel("False Positive Rate")
+        ax.set_ylabel("True Positive Rate")
+        ax.plot([0,1],[0,1], 'k--')
+        ax.axis([0, 1, 0, 1,])
+        ax.plot(fprList, knownAccs, linewidth=2, label=None)
+        roundedAvgOptimalThreshold = round(averagedOptimalThreshold, 1)
+        roundedBestAcc = round(bestKnownAccs, 2)
+        ax.scatter(bestFPR, bestKnownAccs, color='red', label="Avg. Optimal Threshold=" + str(roundedAvgOptimalThreshold) + "\nAccuracy=" + str(roundedBestAcc))
+        ax.legend(loc='lower right')
+        models = ["SVM", "DT", "LDA", "KNN"]
+        saveInfo = saveFolderPath + "\\" + models[selectedModel - 1] + "_CWLength(" + str(
+            len(codeBook[0])) + ")" + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
+                   + "_PercentTrainingData" + "_Split("+\
+                   str(split) + ")" +".png"
+
+        plt.savefig(saveInfo)
         plt.show()
         plt.clf()

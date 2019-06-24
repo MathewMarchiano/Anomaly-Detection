@@ -5,11 +5,12 @@ from AnomalyDetection.Splitter import Splitter
 from AnomalyDetection.Trainer import Trainer
 import numpy as np
 import ast
-import warnings
 
+import warnings
 warnings.filterwarnings("ignore")
+
 def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, dataset,
-                             labelCol, beginDataCol, endDataCol, classifier, folderPathAcc, folderPathHDs):
+                             labelCol, beginDataCol, endDataCol, classifier, folderPathAcc, folderPathHDs, ROCPath):
 
      holdoutIndices = getHoldoutIndices(dataset, labelCol, beginDataCol, endDataCol)
      iterationCount = 1
@@ -45,6 +46,11 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
          dh = DatasetHandler(codebook)
          codebookNum += 1
          for split in listOfNewSplits:
+             # Used for ROC
+             knownAccuraciesToAverage = []
+             unknownAccuraciesToAverage = []
+             highestKnownAccuracies = []
+             highestUnknownAccuracies = []
              for holdout in holdoutIndices:
                  allData, allOriginalLabels = dh.getData(dataset, labelCol, beginDataCol, endDataCol)
                  savedOriginalLabels = allOriginalLabels.copy() # All labels required for assignLabel()
@@ -74,18 +80,29 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  optimalThreshold, lowestDifference, highestKnownAcc, highestUnknownAcc = \
                                                  tm.findOptimalThreshold(listOfThresholds, knownValidationHDs, unknownHDs)
 
+
+
+
+                 # Code for generating ROC
+
+                 knownAccuraciesAll, unknownAccuraciesAll = tm.testAllThresholds(listOfThresholds, knownValidationHDs, unknownHDs)
+                 knownAccuraciesToAverage.append(knownAccuraciesAll)
+                 unknownAccuraciesToAverage.append(unknownAccuraciesAll)
+
                  # Getting accuracies of predictions (whether known or unknown):
                  knownHoldoutDataThresholdAcc = dp.knownThresholdTest(singleDataSamplesHDs, optimalThreshold)
                  unknownHoldoutDataThresholdAcc = dp.unknownThresholdTest(holdoutClassHDs, optimalThreshold)
 
 
-                 #print("Codebook:", codebookNum, "split:", split, "iteration:", iterationCount)
                  iterationCount += 1
 
                  optimalThresholds.append(optimalThreshold)
+                 highestKnownAccuracies.append(highestKnownAcc)
+                 highestUnknownAccuracies.append(highestUnknownAcc)
                  listOfDifferences.append(lowestDifference)
                  unknownAccuracies.append(unknownHoldoutDataThresholdAcc)
                  knownAccuracies.append(knownHoldoutDataThresholdAcc)
+
 
                  #Graphing to see how threshold is performing:
                  dp.graphKnownUnknownHDs(singleDataSamplesHDs, holdoutClassHDs, optimalThreshold, codebookNum,
@@ -93,6 +110,13 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                                          12, holdoutClass, trimmedAllData, unknownData, knownData, codebook,
                                          singleDataSamples, folderPathHDs, classifier)
 
+             averagedKnownAccuracies = tm.averageThresholdAccuracies(knownAccuraciesToAverage)
+             averagedUnknownAccuracies = tm.averageThresholdAccuracies(unknownAccuraciesToAverage)
+             averagedBestKnownAcc = np.mean(highestKnownAccuracies)
+             averagedBestUnknownAcc = np.mean(highestUnknownAccuracies)
+             averagedBestThreshold = np.mean(optimalThresholds)
+             dp.getROC(averagedUnknownAccuracies, averagedKnownAccuracies, split, codebook, ROCPath,
+                                        classifier, averagedBestKnownAcc, averagedBestUnknownAcc, averagedBestThreshold)
 
              printResults(unknownAccuracies, knownAccuracies, optimalThresholds, codebookNum, split)
 
@@ -110,7 +134,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
              unknownMinAccDictionary[split] = min(unknownAccuracies)
              unknownVarDictionary[split] = np.var(unknownAccuracies)
              unknownMeanDictionary[split] = np.mean((unknownAccuracies))
-             dp.getROC(unknownAccuracies, knownAccuracies)
+
              optimalThresholds = []
              unknownAccuracies = []
              knownAccuracies = []
@@ -189,7 +213,8 @@ def parseDatasetInfoFile(textFile):
     param9 = 'labelsColumn'
     param10 = 'dataBeginColumn'
     param11 = 'dataEndColumn'
-    listOfUnsetParams = [param1, param2, param3, param4, param5, param6, param7, param8, param9, param10, param11]
+    param12 = 'filePathROC'
+    listOfUnsetParams = [param1, param2, param3, param4, param5, param6, param7, param8, param9, param10, param11, param12]
     paramValueDictionary = {}
     for unsetParam in listOfUnsetParams:
         paramValueDictionary[unsetParam] = -1
@@ -213,23 +238,19 @@ def parseDatasetInfoFile(textFile):
     labelsColumn = int(paramValueDictionary[param9])
     dataBeginColumn = int(paramValueDictionary[param10])
     dataEndColumn = int(paramValueDictionary[param11])
+    filePathROC = paramValueDictionary[param12]
 
     return codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
-           labelsColumn, dataBeginColumn, dataEndColumn
+           labelsColumn, dataBeginColumn, dataEndColumn, filePathROC
 
-codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
-                    labelsColumn, dataBeginColumn, dataEndColumn = \
-                    parseDatasetInfoFile("D:\ECOC\ECOC_v2\DatasetParameterFiles\ParameterValueFile_LowResolutionSpectrometer_Hadamard.txt")
-listOfCBs = [codebook1, codebook2, codebook3]
 
 print("Please enter the path to your parameter value file")
 parameterValueFile = input().replace('"', '')
 print(parameterValueFile)
-
 codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
-                    labelsColumn, dataBeginColumn, dataEndColumn = \
+                    labelsColumn, dataBeginColumn, dataEndColumn, ROCPath = \
                     parseDatasetInfoFile(parameterValueFile)
-listOfCBs = [codebook1, codebook2, codebook3]
+listOfCBs = [codebook2, codebook3]
 
 print("Please select which classifier you would like to use:")
 print("\tFor SVM, enter 1.")
@@ -241,4 +262,4 @@ classifiers = ["SVM", "DT", "LDA", "KNN"]
 print(classifiers[chosenClassifier - 1], "chosen.")
 print("Running...")
 runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
-                         dataBeginColumn, dataEndColumn, chosenClassifier, filePathAccGraph, filePathHDsGraph)
+                         dataBeginColumn, dataEndColumn, chosenClassifier, filePathAccGraph, filePathHDsGraph, ROCPath)
