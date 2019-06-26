@@ -83,8 +83,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
 
 
 
-                 # Code for generating ROC
-
+                 # Data for generating ROC
                  knownAccuraciesAll, unknownAccuraciesAll = tm.testAllThresholds(listOfThresholds, knownValidationHDs, unknownHDs)
                  knownAccuraciesToAverage.append(knownAccuraciesAll)
                  unknownAccuraciesToAverage.append(unknownAccuraciesAll)
@@ -116,7 +115,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
              averagedBestUnknownAcc = np.mean(highestUnknownAccuracies)
              averagedBestThreshold = np.mean(optimalThresholds)
              dp.getROC(averagedUnknownAccuracies, averagedKnownAccuracies, split, codebook, ROCPath,
-                                        classifier, averagedBestKnownAcc, averagedBestUnknownAcc, averagedBestThreshold)
+                        classifier, averagedBestKnownAcc, averagedBestUnknownAcc, averagedBestThreshold, codebookNum)
 
              printResults(unknownAccuracies, knownAccuracies, optimalThresholds, codebookNum, split)
 
@@ -143,7 +142,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
          dp.accuraciesPlot(knownMinAccDictionay, knownMaxAccDictionary, unknownMinAccDictionary,
                            unknownMaxAccDictionary,knownMeanDictionary, unknownMeanDictionary,
                            codebook, knownData, trimmedAllData, unknownData, singleDataSamples,
-                           folderPathAcc, classifier, listOfNewSplits)
+                           folderPathAcc, classifier, listOfNewSplits, codebookNum)
 
 # Returns a list of indices that are able to be a holdout class (e.g. they contain >=3 samples of data and won't be
 # removed).
@@ -250,7 +249,7 @@ print(parameterValueFile)
 codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
                     labelsColumn, dataBeginColumn, dataEndColumn, ROCPath = \
                     parseDatasetInfoFile(parameterValueFile)
-listOfCBs = [codebook2, codebook3]
+listOfCBs = [codebook1, codebook2, codebook3]
 
 print("Please select which classifier you would like to use:")
 print("\tFor SVM, enter 1.")

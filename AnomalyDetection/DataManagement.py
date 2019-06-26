@@ -214,10 +214,6 @@ class ThresholdManager():
         return averagedAccuracyList
 
 
-
-
-
-
 # Deals with processing the data retrieved from training. Includes graphing.
 class DataProcessor():
     # Graphs the number of instances of a particular hamming distance. Distinguishes between
@@ -252,7 +248,7 @@ class DataProcessor():
         knownData = len(allData) - len(unknownData)
         percentTraining = round((len(knownTrain) / knownData), 2)
         models = ["SVM", "DT", "LDA", "KNN"]
-        saveInfo = saveFolderPath + "\\" + models[selectedClassifier - 1] +"_CWLength(" + str(len(codeBook[0])) \
+        saveInfo = saveFolderPath + "\\" + models[selectedClassifier - 1] +"_CB"+ str(codebookNum) + "_CWLength(" + str(len(codeBook[0])) \
                    + ")_Holdout" + str(holdout) + "_Split" + str(split) + "_Threshold" \
                    + str(threshold) +"_UnknownHoldoutClasses1_KnownHoldoutSamples" \
                    + str(len(knownSingleDataPoints)) + "_PercentTrainingData" \
@@ -332,11 +328,12 @@ class DataProcessor():
 
         return (correctPredictionAmount / total)
 
+    # Graphs the accuracies (for known/unknown predictions) for each split.
     def accuraciesPlot(self, knownAccMinDict, knownAccMaxDict,
                        unknownAccMinDict, unknownAccMaxDict, knownMean,
                        unknownMean, codeBook, knownTrain, allData,
                        unknownData, knownSingleDataPoints, saveFolderPath, selectedModel,
-                       listOfSplits):
+                       listOfSplits, codebookNum):
         ax = plt.subplot(111)
 
         # Representation of min and max values.
@@ -372,7 +369,7 @@ class DataProcessor():
         models = ["SVM", "DT", "LDA", "KNN"] # Corresponds to the number assigned for each classifier in Trainer.py
         # selectedModel has 1 subtracted from it because the models in the Trainer class are assigned with numbers
         # 1 - 4.
-        saveInfo = saveFolderPath + "\\" + models[selectedModel - 1] + "_CWLength(" + str(
+        saveInfo = saveFolderPath + "\\" + models[selectedModel - 1] +"_CB" + str(codebookNum) +"_CWLength(" + str(
             len(codeBook[0])) + ")" + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
             + str(len(knownSingleDataPoints))+ "_PercentTrainingData"+ str(percentTraining)  + ".png"
 
@@ -380,8 +377,11 @@ class DataProcessor():
         plt.show()
         plt.clf()
 
+    # Creates an ROC graph. knownAccs used for true positive rate. unknownAccs used for false positive rate.
+    # besteknownAccs is used to graph the point on the ROC that corresponds to the accuracy of the threshold
+    # that was determined to be most optimal.
     def getROC(self, unknownAccs, knownAccs, split, codeBook, saveFolderPath, selectedModel, bestKnownAccs,
-                                                                            bestUnknownAccs, averagedOptimalThreshold):
+                                                            bestUnknownAccs, averagedOptimalThreshold, codebookNum):
         fprList = []
         bestFPR = 1 - bestUnknownAccs
         # False Positive Rate is = 1 - specificity
@@ -400,11 +400,8 @@ class DataProcessor():
         ax.scatter(bestFPR, bestKnownAccs, color='red', label="Avg. Optimal Threshold=" + str(roundedAvgOptimalThreshold) + "\nAccuracy=" + str(roundedBestAcc))
         ax.legend(loc='lower right')
         models = ["SVM", "DT", "LDA", "KNN"]
-        saveInfo = saveFolderPath + "\\" + models[selectedModel - 1] + "_CWLength(" + str(
-            len(codeBook[0])) + ")" + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
-                   + "_PercentTrainingData" + "_Split("+\
-                   str(split) + ")" +".png"
-
+        saveInfo = saveFolderPath + "\\" + models[selectedModel - 1] + "_CB"+ str(codebookNum) + "_CWLength(" + str(
+            len(codeBook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
         plt.savefig(saveInfo)
         plt.show()
         plt.clf()
