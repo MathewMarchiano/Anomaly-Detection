@@ -80,6 +80,12 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  optimalThreshold, lowestDifference, highestKnownAcc, highestUnknownAcc = \
                                                  tm.findOptimalThreshold(listOfThresholds, knownValidationHDs, unknownHDs)
 
+                 dp.graphBuildingThresholdHistogram(knownValidationHDs, unknownHDs, optimalThreshold,
+                                                 codebookNum, split, highestKnownAcc,
+                                                 highestUnknownAcc, 12, holdout, allData,
+                                                 unknownData, knownData, codebook,
+                                                 singleDataSamples, "EMPTY", classifier)
+
 
 
 
@@ -243,22 +249,23 @@ def parseDatasetInfoFile(textFile):
            labelsColumn, dataBeginColumn, dataEndColumn, filePathROC
 
 
-print("Please enter the path to your parameter value file")
-parameterValueFile = input().replace('"', '')
-print(parameterValueFile)
-codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
-                    labelsColumn, dataBeginColumn, dataEndColumn, ROCPath = \
-                    parseDatasetInfoFile(parameterValueFile)
-listOfCBs = [codebook1, codebook2, codebook3]
+# print("Please enter the path to your parameter value file")
+# parameterValueFile = input().replace('"', '')
+# print(parameterValueFile)
+# codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
+#                     labelsColumn, dataBeginColumn, dataEndColumn, ROCPath = \
+#                     parseDatasetInfoFile(parameterValueFile)
+# listOfCBs = [codebook1, codebook2, codebook3]
+#
+# print("Please select which classifier you would like to use:")
+# print("\tFor SVM, enter 1.")
+# print("\tFor DT, enter 2.")
+# print("\tFor LDA, enter 3.")
+# print("\tFor KNN, enter 4.")
+# chosenClassifier = int(input())
+# classifiers = ["SVM", "DT", "LDA", "KNN"]
+# print(classifiers[chosenClassifier - 1], "chosen.")
+# print("Running...")
+# runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
+#                          dataBeginColumn, dataEndColumn, chosenClassifier, filePathAccGraph, filePathHDsGraph, ROCPath)
 
-print("Please select which classifier you would like to use:")
-print("\tFor SVM, enter 1.")
-print("\tFor DT, enter 2.")
-print("\tFor LDA, enter 3.")
-print("\tFor KNN, enter 4.")
-chosenClassifier = int(input())
-classifiers = ["SVM", "DT", "LDA", "KNN"]
-print(classifiers[chosenClassifier - 1], "chosen.")
-print("Running...")
-runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
-                         dataBeginColumn, dataEndColumn, chosenClassifier, filePathAccGraph, filePathHDsGraph, ROCPath)

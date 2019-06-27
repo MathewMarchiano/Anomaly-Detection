@@ -142,3 +142,43 @@ class Splitter():
 
         return knownValidationData, knownValidationLabels, singleDataSamples, singleDataSamplesLabels, knownData, \
                knownLabels, unknownData, unknownLabels, holdoutData, holdoutLabels
+
+    # Used to create a list of unknown data samples (along with their corresponding labels)
+    # which will be used to build the threshold. The reason this is necessary is to ensure that
+    # there is a equal distribution of known and unknown data samples when building the threshold
+    # in order to minimize bias.
+    # Current approach: randomly selecting from all classes until there are equal amounts of known
+    # and unknown data to build the threshold.
+    def unknownDataSplit(self, knownThresholdBuildingSamples, unknownData, unknownLabels):
+        unknownThresholdBuildingData = []
+        unknownThresholdBuildingLabels = []
+        chosenIndices = []
+        numKnownDataSamples = len(knownThresholdBuildingSamples)
+        endIndex = len(unknownData) - 1
+
+        # Generate random indices to get data from
+        for iteration in range(numKnownDataSamples):
+            randIdx = random.randint(0, endIndex)
+            # Ensure that a particular index is chosen more than once
+            while randIdx in chosenIndices:
+                randIdx = random.randint(0, endIndex)
+
+            chosenIndices.append(randIdx)
+
+        # Grab the data and labels corresponding to the  chosen indices:
+        for index in chosenIndices:
+            unknownThresholdBuildingData.append(unknownData[index])
+            unknownThresholdBuildingLabels.append(unknownLabels[index])
+
+        # Remove the data that was chosen for building the threshold.
+        # (Not completely necessary as of this current version since the rest of the
+        # unknown data will not be used. But if it is, this ensures that we aren't using
+        # data that we shouldn't be).
+        sortedIndicies = sorted(chosenIndices, reverse=True)
+        for index in sortedIndicies:
+            del unknownData[index]
+            del unknownLabels[index]
+
+        return unknownThresholdBuildingData, unknownThresholdBuildingLabels, unknownData, unknownLabels
+
+
