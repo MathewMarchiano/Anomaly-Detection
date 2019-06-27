@@ -10,3 +10,4 @@ D:\ECOC\HammingDistanceHistograms\LowResolutionSpectrometer\Random
 1
 101
 D:\ECOC\ROCFigures\LowResolutionSpectrometer\Random
+D:\ECOC\BuildingThresholdHistograms\LowResolutionSpectrometer\Random

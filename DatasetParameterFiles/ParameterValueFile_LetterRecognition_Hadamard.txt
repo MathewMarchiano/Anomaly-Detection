@@ -10,3 +10,4 @@ D:\ECOC\HammingDistanceHistograms\LetterRecognition\Hadamard
 1
 16
 D:\ECOC\ROCFigures\LetterRecognition\Hadamard
+D:\ECOC\BuildingThresholdHistograms\LetterRecognition\Hadamard

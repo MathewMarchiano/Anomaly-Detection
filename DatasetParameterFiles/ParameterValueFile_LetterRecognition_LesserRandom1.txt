@@ -10,3 +10,4 @@ D:\ECOC\HammingDistanceHistograms\LetterRecognition\LesserRandom1
 1
 16
 D:\ECOC\ROCFigures\LetterRecognition\LesserRandom1
+D:\ECOC\BuildingThresholdHistograms\LetterRecognition\LesserRandom1

@@ -10,3 +10,4 @@ D:\ECOC\HammingDistanceHistograms\LowResolutionSpectrometer\Hadamard
 1
 101
 D:\ECOC\ROCFigures\LowResolutionSpectrometer\Hadamard
+D:\ECOC\BuildingThresholdHistograms\LowResolutionSpectrometer\Hadamard
