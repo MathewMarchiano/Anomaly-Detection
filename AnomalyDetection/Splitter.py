@@ -152,18 +152,20 @@ class Splitter():
     def unknownDataSplit(self, knownThresholdBuildingSamples, unknownData, unknownLabels):
         unknownThresholdBuildingData = []
         unknownThresholdBuildingLabels = []
-        chosenIndices = []
         numKnownDataSamples = len(knownThresholdBuildingSamples)
         endIndex = len(unknownData) - 1
+        chosenIndices = []
+
 
         # Generate random indices to get data from
-        for iteration in range(numKnownDataSamples):
-            randIdx = random.randint(0, endIndex)
-            # Ensure that a particular index is chosen more than once
-            while randIdx in chosenIndices:
-                randIdx = random.randint(0, endIndex)
 
-            chosenIndices.append(randIdx)
+        # If the number of known class data samples to build the threshold is  greater than
+        # the number of all unknown classes, use all unknown classes to build the threshold.
+        if numKnownDataSamples > endIndex:
+           unknownThresholdBuildingData = unknownData
+           unknownThresholdBuildingLabels = unknownLabels
+        else:
+            chosenIndices = random.sample(range(0, endIndex), numKnownDataSamples)
 
         # Grab the data and labels corresponding to the  chosen indices:
         for index in chosenIndices:

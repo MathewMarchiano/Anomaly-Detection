@@ -10,7 +10,8 @@ import warnings
 warnings.filterwarnings("ignore")
 
 def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, dataset,
-                             labelCol, beginDataCol, endDataCol, classifier, folderPathAcc, folderPathHDs, ROCPath):
+                             labelCol, beginDataCol, endDataCol, classifier, folderPathAcc,
+                             folderPathHDs, ROCPath, buildTresholdHistogramPath):
 
      holdoutIndices = getHoldoutIndices(dataset, labelCol, beginDataCol, endDataCol)
      iterationCount = 1
@@ -53,21 +54,30 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
              highestUnknownAccuracies = []
              for holdout in holdoutIndices:
                  allData, allOriginalLabels = dh.getData(dataset, labelCol, beginDataCol, endDataCol)
+
                  savedOriginalLabels = allOriginalLabels.copy() # All labels required for assignLabel()
+
                  trimmedAllData, trimmedAllOriginalLabels, scaledData, codewordColumns = \
                                               processOriginalData(dh, allData, allOriginalLabels, savedOriginalLabels)
+
                  listOfUnknownClasses, listOfKnownClasses, holdoutClass = \
                      splitter.assignLabel(trimmedAllOriginalLabels, savedOriginalLabels, split, holdout)
+
                  knownValidationData, knownValidationLabels, singleDataSamples, singleDataSamplesLabels, knownData, \
                  knownLabels, unknownData, unknownLabels, holdoutData, holdoutLabels \
                      = splitter.splitDataAndLabels(scaledData, trimmedAllOriginalLabels, listOfUnknownClasses, holdoutClass)
+
+                 unknownThresholdBuildingData, unknownThresholdBuildingLabels, unknownData, unknownLabels = \
+                                    splitter.unknownDataSplit(knownValidationData, unknownData, unknownLabels)
+
                  knownECOCLabels = trainer.makeTrainingLabels(codewordColumns, knownLabels)
+                 
                  listOfClassifiers = trainer.trainClassifiers(knownData, knownECOCLabels, classifier)
 
                  # Getting predictions on all relevant data:
                  unknownPreds, holdoutClassPreds, singleDataSamplesPreds, knownValidationPreds = \
-                                                            getPredictions(unknownData, holdoutData, singleDataSamples,
-                                                            knownValidationData, listOfClassifiers, trainer)
+                                            getPredictions(unknownThresholdBuildingData, holdoutData, singleDataSamples,
+                                                                    knownValidationData, listOfClassifiers, trainer)
 
                  # Getting the shortest hamming distance that each prediction corresponds to:
                  unknownECOCPreds, unknownHDs = trainer.hammingDistanceUpdater(codebook, unknownPreds)
@@ -84,7 +94,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                                                  codebookNum, split, highestKnownAcc,
                                                  highestUnknownAcc, 12, holdout, allData,
                                                  unknownData, knownData, codebook,
-                                                 singleDataSamples, "EMPTY", classifier)
+                                                 singleDataSamples, buildTresholdHistogramPath, classifier)
 
 
 
@@ -110,10 +120,10 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
 
 
                  #Graphing to see how threshold is performing:
-                 dp.graphKnownUnknownHDs(singleDataSamplesHDs, holdoutClassHDs, optimalThreshold, codebookNum,
-                                         split, knownHoldoutDataThresholdAcc, unknownHoldoutDataThresholdAcc,
-                                         12, holdoutClass, trimmedAllData, unknownData, knownData, codebook,
-                                         singleDataSamples, folderPathHDs, classifier)
+                 dp.graphThresholdTestHistogram(singleDataSamplesHDs, holdoutClassHDs, optimalThreshold, codebookNum,
+                                                split, knownHoldoutDataThresholdAcc, unknownHoldoutDataThresholdAcc,
+                                                12, holdoutClass, trimmedAllData, unknownData, knownData, codebook,
+                                                singleDataSamples, folderPathHDs, classifier)
 
              averagedKnownAccuracies = tm.averageThresholdAccuracies(knownAccuraciesToAverage)
              averagedUnknownAccuracies = tm.averageThresholdAccuracies(unknownAccuraciesToAverage)
@@ -219,7 +229,9 @@ def parseDatasetInfoFile(textFile):
     param10 = 'dataBeginColumn'
     param11 = 'dataEndColumn'
     param12 = 'filePathROC'
-    listOfUnsetParams = [param1, param2, param3, param4, param5, param6, param7, param8, param9, param10, param11, param12]
+    param13 = 'filePathBuildThresholdHistogram'
+    listOfUnsetParams = [param1, param2, param3, param4, param5, param6, param7,
+                         param8, param9, param10, param11, param12, param13]
     paramValueDictionary = {}
     for unsetParam in listOfUnsetParams:
         paramValueDictionary[unsetParam] = -1
@@ -244,28 +256,30 @@ def parseDatasetInfoFile(textFile):
     dataBeginColumn = int(paramValueDictionary[param10])
     dataEndColumn = int(paramValueDictionary[param11])
     filePathROC = paramValueDictionary[param12]
+    filePathBuildingThresholdHistogram = paramValueDictionary[param13]
 
     return codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
-           labelsColumn, dataBeginColumn, dataEndColumn, filePathROC
+           labelsColumn, dataBeginColumn, dataEndColumn, filePathROC, filePathBuildingThresholdHistogram
 
 
-# print("Please enter the path to your parameter value file")
-# parameterValueFile = input().replace('"', '')
-# print(parameterValueFile)
-# codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
-#                     labelsColumn, dataBeginColumn, dataEndColumn, ROCPath = \
-#                     parseDatasetInfoFile(parameterValueFile)
-# listOfCBs = [codebook1, codebook2, codebook3]
-#
-# print("Please select which classifier you would like to use:")
-# print("\tFor SVM, enter 1.")
-# print("\tFor DT, enter 2.")
-# print("\tFor LDA, enter 3.")
-# print("\tFor KNN, enter 4.")
-# chosenClassifier = int(input())
-# classifiers = ["SVM", "DT", "LDA", "KNN"]
-# print(classifiers[chosenClassifier - 1], "chosen.")
-# print("Running...")
-# runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
-#                          dataBeginColumn, dataEndColumn, chosenClassifier, filePathAccGraph, filePathHDsGraph, ROCPath)
+print("Please enter the path to your parameter value file")
+parameterValueFile = input().replace('"', '')
+print(parameterValueFile)
+codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
+                    labelsColumn, dataBeginColumn, dataEndColumn, ROCPath, buildThresholdHistogramPath = \
+                    parseDatasetInfoFile(parameterValueFile)
+listOfCBs = [codebook1, codebook2, codebook3]
+
+print("Please select which classifier you would like to use:")
+print("\tFor SVM, enter 1.")
+print("\tFor DT, enter 2.")
+print("\tFor LDA, enter 3.")
+print("\tFor KNN, enter 4.")
+chosenClassifier = int(input())
+classifiers = ["SVM", "DT", "LDA", "KNN"]
+print(classifiers[chosenClassifier - 1], "chosen.")
+print("Running...")
+runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
+                         dataBeginColumn, dataEndColumn, chosenClassifier,
+                         filePathAccGraph, filePathHDsGraph, ROCPath, buildThresholdHistogramPath)
 

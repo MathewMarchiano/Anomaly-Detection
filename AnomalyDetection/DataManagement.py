@@ -218,11 +218,11 @@ class DataProcessor():
     # Graphs the number of instances of a particular hamming distance. Distinguishes between
     # hamming distances that are supposed to be known or unknown.
     # Used for generating a histogram showing the threshold being TESTED.
-    def graphKnownUnknownHDs(self, knownHDs, unknownHDs, threshold,
-                             codebookNum, split, knownAcc,
-                             unknownAcc, seed, holdout, allData,
-                             unknownData, knownTrain, codeBook,
-                             knownSingleDataPoints, saveFolderPath, selectedClassifier):
+    def graphThresholdTestHistogram(self, knownHDs, unknownHDs, threshold,
+                                    codebookNum, split, knownAcc,
+                                    unknownAcc, seed, holdout, allData,
+                                    unknownData, knownTrain, codeBook,
+                                    knownSingleDataPoints, saveFolderPath, selectedClassifier):
         bins = np.arange(20)
         ax = plt.subplot(111)
         thresholdText = "Optimal Threshold: " + str(threshold)
@@ -282,19 +282,19 @@ class DataProcessor():
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
-        # handles, labels = ax.get_legend_handles_labels()
-        # lgd = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
-        # knownData = len(allData) - len(unknownData)
-        # percentTraining = round((len(knownTrain) / knownData), 2)
-        # models = ["SVM", "DT", "LDA", "KNN"]
-        # saveInfo = saveFolderPath + "\\" + models[selectedClassifier - 1] + "_CB" + str(
-        #     codebookNum) + "_CWLength(" + str(len(codeBook[0])) \
-        #            + ")_Holdout" + str(holdout) + "_Split" + str(split) + "_Threshold" \
-        #            + str(threshold) + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
-        #            + str(len(knownSingleDataPoints)) + "_PercentTrainingData" \
-        #            + str(percentTraining) + ".png"
-        # plt.savefig(saveInfo, dpi=300,
-        #             bbox_extra_artists=(lgd,), bbox_inches='tight')
+        handles, labels = ax.get_legend_handles_labels()
+        lgd = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
+        knownData = len(allData) - len(unknownData)
+        percentTraining = round((len(knownTrain) / knownData), 2)
+        models = ["SVM", "DT", "LDA", "KNN"]
+        saveInfo = saveFolderPath + "\\" + models[selectedClassifier - 1] + "_CB" + str(
+            codebookNum) + "_CWLength(" + str(len(codeBook[0])) \
+                   + ")_Holdout" + str(holdout) + "_Split" + str(split) + "_Threshold" \
+                   + str(threshold) + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
+                   + str(len(knownSingleDataPoints)) + "_PercentTrainingData" \
+                   + str(percentTraining) + ".png"
+        plt.savefig(saveInfo, dpi=300,
+                    bbox_extra_artists=(lgd,), bbox_inches='tight')
         plt.show()
         plt.clf()
 
