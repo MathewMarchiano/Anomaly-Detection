@@ -71,7 +71,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                                     splitter.unknownDataSplit(knownValidationData, unknownData, unknownLabels)
 
                  knownECOCLabels = trainer.makeTrainingLabels(codewordColumns, knownLabels)
-                 
+
                  listOfClassifiers = trainer.trainClassifiers(knownData, knownECOCLabels, classifier)
 
                  # Getting predictions on all relevant data:
