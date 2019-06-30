@@ -143,44 +143,79 @@ class Splitter():
         return knownValidationData, knownValidationLabels, singleDataSamples, singleDataSamplesLabels, knownData, \
                knownLabels, unknownData, unknownLabels, holdoutData, holdoutLabels
 
-    # Used to create a list of unknown data samples (along with their corresponding labels)
-    # which will be used to build the threshold. The reason this is necessary is to ensure that
-    # there is a equal distribution of known and unknown data samples when building the threshold
-    # in order to minimize bias.
-    # Current approach: randomly selecting from all classes until there are equal amounts of known
-    # and unknown data to build the threshold.
-    def unknownDataSplit(self, knownThresholdBuildingSamples, unknownData, unknownLabels):
-        unknownThresholdBuildingData = []
-        unknownThresholdBuildingLabels = []
-        numKnownDataSamples = len(knownThresholdBuildingSamples)
-        endIndex = len(unknownData) - 1
-        chosenIndices = []
+    # Used to reduce a certain split's (known or unknown split, specifically) number of samples used to build
+    # the threshold.
+    # This particular version of reduceThresholdBuildingSamples is labeled "AllClasses" because it will randomly select
+    # from all samples from all classes of the "largerSplitDataSamples/Labels" variables.
+    def reduceThresholdBuildingSamples_AllClasses(self, smallerSplitDataSamples, largerSplitDataSamples, largerSplitLabels):
+        reducedThresholdBuildingData = [] # The shortened list of data samples which will be used to build threshold.
+        reducedThresholdBuildingLabels = [] # Same as above, except labels instead of data.
+        numSmallerSplitDataSamples = len(smallerSplitDataSamples)
+        endIndex = len(largerSplitDataSamples)
 
-
-        # Generate random indices to get data from
-
-        # If the number of known class data samples to build the threshold is  greater than
-        # the number of all unknown classes, use all unknown classes to build the threshold.
-        if numKnownDataSamples > endIndex:
-           unknownThresholdBuildingData = unknownData
-           unknownThresholdBuildingLabels = unknownLabels
-        else:
-            chosenIndices = random.sample(range(0, endIndex), numKnownDataSamples)
+        # Generate random indices to get data from in order to build a "reduced list" of
+        # samples to use for building the threshold.
+        chosenIndices = random.sample(range(0, endIndex), numSmallerSplitDataSamples)
 
         # Grab the data and labels corresponding to the  chosen indices:
         for index in chosenIndices:
-            unknownThresholdBuildingData.append(unknownData[index])
-            unknownThresholdBuildingLabels.append(unknownLabels[index])
+            reducedThresholdBuildingData.append(largerSplitDataSamples[index])
+            reducedThresholdBuildingLabels.append(largerSplitLabels[index])
 
-        # Remove the data that was chosen for building the threshold.
-        # (Not completely necessary as of this current version since the rest of the
-        # unknown data will not be used. But if it is, this ensures that we aren't using
-        # data that we shouldn't be).
-        sortedIndicies = sorted(chosenIndices, reverse=True)
-        for index in sortedIndicies:
-            del unknownData[index]
-            del unknownLabels[index]
+        return reducedThresholdBuildingData, reducedThresholdBuildingLabels
 
-        return unknownThresholdBuildingData, unknownThresholdBuildingLabels, unknownData, unknownLabels
+    # Used to reduce a certain split's (known or unknown split, specifically) number of samples used to build
+    # the threshold (same use as above -- different approach).
+    # This particular version of reduceThresholdBuildingSamples is labeled "FewestClasses" because it will randomly select
+    # from one class until there is enough samples to match the smaller split of samples. If that particular class does
+    # not contain enough samples of data, it will randomly select another class to begin choosing samples from. This
+    # ensures that the minimum amount of classes are used when building the threshold building samples.
+    def reduceThresholdBuildingSamples_FewestClasses(self, smallerSplitDataSamples, largerSplitDataSamples, largerSplitLabels):
+        reducedThresholdBuildingData = [] # The shortened list of data samples which will be used to build threshold.
+        reducedThresholdBuildingLabels = [] # Same as above, except labels instead of data.
+        numSmallerSplitDataSamples = len(smallerSplitDataSamples)
+
+        # Get list of all potential classes to choose from
+        uniqueClasses = np.unique(largerSplitLabels)
+
+        # Create a dictionary containing each unique class as a key, and a list of all
+        # corresponding data samples to that key as the value
+        uniqueClassesDictioary = {}
+        for key in uniqueClasses:
+            uniqueClassesDictioary[key] = []
+
+        # Populate each list for each key with the indices of their particular data/label
+        numLargerSplitLabels = len(largerSplitLabels)
+        for key in uniqueClassesDictioary:
+            for index in range(numLargerSplitLabels):
+                if key == largerSplitLabels[index]:
+                    uniqueClassesDictioary[key].append(index)
+
+        # Create a list of indices for both data and labels that will be used to build the
+        # threshold. Ensuring that the minimum amount of classes are used.
+        chosenIndices = []
+        for key in uniqueClassesDictioary:
+            # First check if we will need to use the entire class. If the class contains fewer number of samples than
+            # what we need total, we will.
+            if len(uniqueClassesDictioary[key]) + len(chosenIndices) <= numSmallerSplitDataSamples:
+                for value in uniqueClassesDictioary[key]:
+                    chosenIndices.append(value)
+            # If we don't need all the samples, randomly select the remaining amount that we need
+            else:
+                # Get random indices to select from the list containing the indices we are interested in
+                remainingSamplesNeeded = numSmallerSplitDataSamples - len(chosenIndices)
+                endIndex = len(uniqueClassesDictioary[key])
+                randomlyChosenIndices = random.sample(range(0, endIndex), remainingSamplesNeeded)
+                # Add the indices we're interested to the chosenIndices list
+                for index in randomlyChosenIndices:
+                    chosenIndices.append(uniqueClassesDictioary[key][index]) #Access value (list) ->
+                break # If the 'else' part of the loop is reached, then no more samples are needed (no need to keep looping).                                                                # get index we're interested in
+
+        # Get the data and labels that correspond to each index
+        for index in chosenIndices:
+            reducedThresholdBuildingData.append(largerSplitDataSamples[index])
+            reducedThresholdBuildingLabels.append(largerSplitLabels[index])
+
+        return reducedThresholdBuildingData, reducedThresholdBuildingLabels
 
 
