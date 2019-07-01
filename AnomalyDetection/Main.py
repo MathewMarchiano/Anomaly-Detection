@@ -1,8 +1,8 @@
-from AnomalyDetection.DataManagement import DatasetHandler
-from AnomalyDetection.DataManagement import ThresholdManager
-from AnomalyDetection.DataManagement import DataProcessor
-from AnomalyDetection.Splitter import Splitter
-from AnomalyDetection.Trainer import Trainer
+from DataManagement import DatasetHandler
+from DataManagement import ThresholdManager
+from DataManagement import DataProcessor
+from Splitter import Splitter
+from Trainer import Trainer
 import numpy as np
 import ast
 
@@ -63,51 +63,57 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  listOfUnknownClasses, listOfKnownClasses, holdoutClass = \
                      splitter.assignLabel(trimmedAllOriginalLabels, savedOriginalLabels, split, holdout)
 
-                 knownValidationData, knownValidationLabels, singleDataSamples, singleDataSamplesLabels, knownData, \
-                 knownLabels, unknownData, unknownLabels, holdoutData, holdoutLabels \
+                 knownThresholdBuildingData, knownThresholdBuildingLabels, singleDataSamples, singleDataSamplesLabels, knownData, \
+                 knownLabels, unknownThresholdBuildingData, unknownThresholdBuildingLabels, holdoutData, holdoutLabels \
                      = splitter.splitDataAndLabels(scaledData, trimmedAllOriginalLabels, listOfUnknownClasses, holdoutClass)
 
-                 unknownThresholdBuildingData, unknownThresholdBuildingLabels, unknownData, unknownLabels = \
-                                    splitter.unknownDataSplit(knownValidationData, unknownData, unknownLabels)
+                 # Making sure that the number of data samples used to build the threshold are equal
+                 if len(unknownThresholdBuildingData) > len(knownThresholdBuildingData):
+                     # Bring unknownThresholdBuilding samples down to number of samples for unknown
+                     unknownThresholdBuildingData, unknownThresholdBuildingLabels,  = \
+                         splitter.reduceThresholdBuildingSamples_FewestClasses(knownThresholdBuildingData,
+                                                        unknownThresholdBuildingData, unknownThresholdBuildingLabels)
 
                  knownECOCLabels = trainer.makeTrainingLabels(codewordColumns, knownLabels)
-
+                 print(len(unknownThresholdBuildingData))
+                 print(len(knownThresholdBuildingData))
                  listOfClassifiers = trainer.trainClassifiers(knownData, knownECOCLabels, classifier)
 
                  # Getting predictions on all relevant data:
-                 unknownPreds, holdoutClassPreds, singleDataSamplesPreds, knownValidationPreds = \
+                 unknownThresholdBuildingPreds, holdoutClassPreds, singleDataSamplesPreds, knownThresholdBuildingPreds = \
                                             getPredictions(unknownThresholdBuildingData, holdoutData, singleDataSamples,
-                                                                    knownValidationData, listOfClassifiers, trainer)
+                                                                 knownThresholdBuildingData, listOfClassifiers, trainer)
 
                  # Getting the shortest hamming distance that each prediction corresponds to:
-                 unknownECOCPreds, unknownHDs = trainer.hammingDistanceUpdater(codebook, unknownPreds)
+                 unknownECOCPreds, unknownThresholdBuildingHDs = \
+                     trainer.hammingDistanceUpdater(codebook, unknownThresholdBuildingPreds)
                  holdoutClassECOCPreds, holdoutClassHDs = trainer.hammingDistanceUpdater(codebook, holdoutClassPreds)
                  singleDataSamplesECOCPreds, singleDataSamplesHDs = trainer.hammingDistanceUpdater(codebook,
                                                                                                 singleDataSamplesPreds)
-                 knownValidationECOCPreds, knownValidationHDs = trainer.hammingDistanceUpdater(codebook,
-                                                                                               knownValidationPreds)
+                 knownValidationECOCPreds, knownThresholdBuildingHDs = trainer.hammingDistanceUpdater(codebook,
+                                                                                         knownThresholdBuildingPreds)
 
                  optimalThreshold, lowestDifference, highestKnownAcc, highestUnknownAcc = \
-                                                 tm.findOptimalThreshold(listOfThresholds, knownValidationHDs, unknownHDs)
+                        tm.findOptimalThreshold(listOfThresholds, knownThresholdBuildingHDs, unknownThresholdBuildingHDs)
 
-                 dp.graphBuildingThresholdHistogram(knownValidationHDs, unknownHDs, optimalThreshold,
+                 dp.graphBuildingThresholdHistogram(knownThresholdBuildingHDs, unknownThresholdBuildingHDs, optimalThreshold,
                                                  codebookNum, split, highestKnownAcc,
                                                  highestUnknownAcc, 12, holdout, allData,
-                                                 unknownData, knownData, codebook,
+                                                 unknownThresholdBuildingData, knownData, codebook,
                                                  singleDataSamples, buildTresholdHistogramPath, classifier)
 
 
 
 
                  # Data for generating ROC
-                 knownAccuraciesAll, unknownAccuraciesAll = tm.testAllThresholds(listOfThresholds, knownValidationHDs, unknownHDs)
+                 knownAccuraciesAll, unknownAccuraciesAll = tm.testAllThresholds(listOfThresholds,
+                                                                knownThresholdBuildingHDs, unknownThresholdBuildingHDs)
                  knownAccuraciesToAverage.append(knownAccuraciesAll)
                  unknownAccuraciesToAverage.append(unknownAccuraciesAll)
 
                  # Getting accuracies of predictions (whether known or unknown):
                  knownHoldoutDataThresholdAcc = dp.knownThresholdTest(singleDataSamplesHDs, optimalThreshold)
                  unknownHoldoutDataThresholdAcc = dp.unknownThresholdTest(holdoutClassHDs, optimalThreshold)
-
 
                  iterationCount += 1
 
@@ -122,9 +128,8 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  #Graphing to see how threshold is performing:
                  dp.graphThresholdTestHistogram(singleDataSamplesHDs, holdoutClassHDs, optimalThreshold, codebookNum,
                                                 split, knownHoldoutDataThresholdAcc, unknownHoldoutDataThresholdAcc,
-                                                12, holdoutClass, trimmedAllData, unknownData, knownData, codebook,
-                                                singleDataSamples, folderPathHDs, classifier)
-
+                                                12, holdoutClass, trimmedAllData, unknownThresholdBuildingData, knownData,
+                                                codebook, singleDataSamples, folderPathHDs, classifier)
              averagedKnownAccuracies = tm.averageThresholdAccuracies(knownAccuraciesToAverage)
              averagedUnknownAccuracies = tm.averageThresholdAccuracies(unknownAccuraciesToAverage)
              averagedBestKnownAcc = np.mean(highestKnownAccuracies)
@@ -157,7 +162,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
 
          dp.accuraciesPlot(knownMinAccDictionay, knownMaxAccDictionary, unknownMinAccDictionary,
                            unknownMaxAccDictionary,knownMeanDictionary, unknownMeanDictionary,
-                           codebook, knownData, trimmedAllData, unknownData, singleDataSamples,
+                           codebook, knownData, trimmedAllData, unknownThresholdBuildingData, singleDataSamples,
                            folderPathAcc, classifier, listOfNewSplits, codebookNum)
 
 # Returns a list of indices that are able to be a holdout class (e.g. they contain >=3 samples of data and won't be
@@ -282,4 +287,3 @@ print("Running...")
 runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
                          dataBeginColumn, dataEndColumn, chosenClassifier,
                          filePathAccGraph, filePathHDsGraph, ROCPath, buildThresholdHistogramPath)
-
