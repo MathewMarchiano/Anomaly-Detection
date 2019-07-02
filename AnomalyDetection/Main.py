@@ -1,8 +1,8 @@
-from DataManagement import DatasetHandler
-from DataManagement import ThresholdManager
-from DataManagement import DataProcessor
-from Splitter import Splitter
-from Trainer import Trainer
+from AnomalyDetection.DataManagement import DatasetHandler
+from AnomalyDetection.DataManagement import ThresholdManager
+from AnomalyDetection.DataManagement import DataProcessor
+from AnomalyDetection.Splitter import Splitter
+from AnomalyDetection.Trainer import Trainer
 import numpy as np
 import ast
 
@@ -67,9 +67,8 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  knownLabels, unknownThresholdBuildingData, unknownThresholdBuildingLabels, holdoutData, holdoutLabels \
                      = splitter.splitDataAndLabels(scaledData, trimmedAllOriginalLabels, listOfUnknownClasses, holdoutClass)
 
-                 # Making sure that the number of data samples used to build the threshold are equal
+                 # Ensuring number of unknown threshold building data samples never exceeds known data samples
                  if len(unknownThresholdBuildingData) > len(knownThresholdBuildingData):
-                     # Bring unknownThresholdBuilding samples down to number of samples for unknown
                      unknownThresholdBuildingData, unknownThresholdBuildingLabels,  = \
                          splitter.reduceThresholdBuildingSamples_FewestClasses(knownThresholdBuildingData,
                                                         unknownThresholdBuildingData, unknownThresholdBuildingLabels)

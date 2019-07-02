@@ -423,9 +423,9 @@ class DataProcessor():
     def getROC(self, unknownAccs, knownAccs, split, codeBook, saveFolderPath, selectedModel, bestKnownAccs,
                                                             bestUnknownAccs, averagedOptimalThreshold, codebookNum):
         fprList = []
-        bestFPR = 1 - bestUnknownAccs
+        bestFPR = 1 - bestKnownAccs
         # False Positive Rate is = 1 - specificity
-        for acc in unknownAccs:
+        for acc in knownAccs:
             fprList.append(1 - acc)
         print(np.max(fprList))
         ax = plt.subplot(111)
@@ -434,10 +434,10 @@ class DataProcessor():
         ax.set_ylabel("True Positive Rate")
         ax.plot([0,1],[0,1], 'k--')
         ax.axis([0, 1, 0, 1,])
-        ax.plot(fprList, knownAccs, linewidth=2, label=None)
+        ax.plot(fprList, unknownAccs, linewidth=2, label=None)
         roundedAvgOptimalThreshold = round(averagedOptimalThreshold, 1)
-        roundedBestAcc = round(bestKnownAccs, 2)
-        ax.scatter(bestFPR, bestKnownAccs, color='red', label="Avg. Optimal Threshold=" + str(roundedAvgOptimalThreshold) + "\nAccuracy=" + str(roundedBestAcc))
+        roundedBestAcc = round(bestUnknownAccs, 2)
+        ax.scatter(bestFPR, bestUnknownAccs, color='red', label="Avg. Optimal Threshold=" + str(roundedAvgOptimalThreshold) + "\nAccuracy=" + str(roundedBestAcc))
         ax.legend(loc='lower right')
         models = ["SVM", "DT", "LDA", "KNN"]
         saveInfo = saveFolderPath + "\\" + models[selectedModel - 1] + "_CB"+ str(codebookNum) + "_CWLength(" + str(

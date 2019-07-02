@@ -208,7 +208,7 @@ class Splitter():
                 randomlyChosenIndices = random.sample(range(0, endIndex), remainingSamplesNeeded)
                 # Add the indices we're interested to the chosenIndices list
                 for index in randomlyChosenIndices:
-                    chosenIndices.append(uniqueClassesDictioary[key][index]) #Access value (list) ->
+                    chosenIndices.append(uniqueClassesDictioary[key][index])
                 break # If the 'else' part of the loop is reached, then no more samples are needed (no need to keep looping).                                                                # get index we're interested in
 
         # Get the data and labels that correspond to each index
