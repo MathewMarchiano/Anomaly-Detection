@@ -1,6 +1,6 @@
 from AnomalyDetection.DataManagement import DatasetHandler
 from AnomalyDetection.DataManagement import ThresholdManager
-from AnomalyDetection.DataManagement import DataProcessor
+from AnomalyDetection.DataManagement import Visuals
 from AnomalyDetection.Splitter import Splitter
 from AnomalyDetection.Trainer import Trainer
 import numpy as np
@@ -24,7 +24,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
      splitter = Splitter()
      trainer = Trainer()
      tm = ThresholdManager()
-     dp = DataProcessor()
+     vis = Visuals()
 
      for codebook in listOfCBs:
          # Max
@@ -74,8 +74,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                                                         unknownThresholdBuildingData, unknownThresholdBuildingLabels)
 
                  knownECOCLabels = trainer.makeTrainingLabels(codewordColumns, knownLabels)
-                 print(len(unknownThresholdBuildingData))
-                 print(len(knownThresholdBuildingData))
+
                  listOfClassifiers = trainer.trainClassifiers(knownData, knownECOCLabels, classifier)
 
                  # Getting predictions on all relevant data:
@@ -95,7 +94,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  optimalThreshold, lowestDifference, highestKnownAcc, highestUnknownAcc = \
                         tm.findOptimalThreshold(listOfThresholds, knownThresholdBuildingHDs, unknownThresholdBuildingHDs)
 
-                 dp.graphBuildingThresholdHistogram(knownThresholdBuildingHDs, unknownThresholdBuildingHDs, optimalThreshold,
+                 vis.graphBuildingThresholdHistogram(knownThresholdBuildingHDs, unknownThresholdBuildingHDs, optimalThreshold,
                                                  codebookNum, split, highestKnownAcc,
                                                  highestUnknownAcc, 12, holdout, allData,
                                                  unknownThresholdBuildingData, knownData, codebook,
@@ -111,8 +110,8 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  unknownAccuraciesToAverage.append(unknownAccuraciesAll)
 
                  # Getting accuracies of predictions (whether known or unknown):
-                 knownHoldoutDataThresholdAcc = dp.knownThresholdTest(singleDataSamplesHDs, optimalThreshold)
-                 unknownHoldoutDataThresholdAcc = dp.unknownThresholdTest(holdoutClassHDs, optimalThreshold)
+                 knownHoldoutDataThresholdAcc = tm.knownThresholdTest(singleDataSamplesHDs, optimalThreshold)
+                 unknownHoldoutDataThresholdAcc = tm.unknownThresholdTest(holdoutClassHDs, optimalThreshold)
 
                  iterationCount += 1
 
@@ -125,7 +124,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
 
 
                  #Graphing to see how threshold is performing:
-                 dp.graphThresholdTestHistogram(singleDataSamplesHDs, holdoutClassHDs, optimalThreshold, codebookNum,
+                 vis.graphThresholdTestHistogram(singleDataSamplesHDs, holdoutClassHDs, optimalThreshold, codebookNum,
                                                 split, knownHoldoutDataThresholdAcc, unknownHoldoutDataThresholdAcc,
                                                 12, holdoutClass, trimmedAllData, unknownThresholdBuildingData, knownData,
                                                 codebook, singleDataSamples, folderPathHDs, classifier)
@@ -134,8 +133,8 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
              averagedBestKnownAcc = np.mean(highestKnownAccuracies)
              averagedBestUnknownAcc = np.mean(highestUnknownAccuracies)
              averagedBestThreshold = np.mean(optimalThresholds)
-             dp.getROC(averagedUnknownAccuracies, averagedKnownAccuracies, split, codebook, ROCPath,
-                        classifier, averagedBestKnownAcc, averagedBestUnknownAcc, averagedBestThreshold, codebookNum)
+             vis.graphROC(averagedUnknownAccuracies, averagedKnownAccuracies, split, codebook, ROCPath,
+                          classifier, averagedBestKnownAcc, averagedBestUnknownAcc, averagedBestThreshold, codebookNum)
 
              printResults(unknownAccuracies, knownAccuracies, optimalThresholds, codebookNum, split)
 
@@ -159,7 +158,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
              knownAccuracies = []
              iterationCount = 1
 
-         dp.accuraciesPlot(knownMinAccDictionay, knownMaxAccDictionary, unknownMinAccDictionary,
+         vis.accuraciesPlot(knownMinAccDictionay, knownMaxAccDictionary, unknownMinAccDictionary,
                            unknownMaxAccDictionary,knownMeanDictionary, unknownMeanDictionary,
                            codebook, knownData, trimmedAllData, unknownThresholdBuildingData, singleDataSamples,
                            folderPathAcc, classifier, listOfNewSplits, codebookNum)
