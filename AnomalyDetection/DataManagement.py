@@ -241,12 +241,14 @@ class ThresholdManager():
 class Visuals():
     # Graphs the number of instances of a particular hamming distance. Distinguishes between
     # hamming distances that are supposed to be known or unknown.
-    # Used for generating a histogram showing the threshold being TESTED.
+    # The last parameter "isBuilding" is used to differentiate this function when being used to visualize
+    # building the threshold (True) or visualize testing the threshold (False). This ensures that calling this
+    # function won't overwrite itself when trying to show 2 different histograms.
     def graphThresholdTestHistogram(self, knownHDs, unknownHDs, threshold,
                                     codebookNum, split, knownAcc,
                                     unknownAcc, seed, holdout, allData,
                                     unknownData, knownTrain, codeBook,
-                                    knownSingleDataPoints, saveFolderPath, selectedClassifier):
+                                    knownSingleDataPoints, saveFolderPath, selectedClassifier, isBuilding):
         bins = np.arange(20)
         ax = plt.subplot(111)
         thresholdText = "Optimal Threshold: " + str(threshold)
@@ -272,54 +274,22 @@ class Visuals():
         knownData = len(allData) - len(unknownData)
         percentTraining = round((len(knownTrain) / knownData), 2)
         models = ["SVM", "DT", "LDA", "KNN"]
-        saveInfo = saveFolderPath + "\\" + models[selectedClassifier - 1] +"_CB"+ str(codebookNum) + "_CWLength(" + str(len(codeBook[0])) \
-                   + ")_Holdout" + str(holdout) + "_Split" + str(split) + "_Threshold" \
-                   + str(threshold) +"_UnknownHoldoutClasses1_KnownHoldoutSamples" \
-                   + str(len(knownSingleDataPoints)) + "_PercentTrainingData" \
-                   + str(percentTraining) + ".png"
+        if isBuilding:
+            saveInfo = saveFolderPath + "\\" + "_BuildingThreshold_" + models[selectedClassifier - 1] +"_CB"+ str(codebookNum) + "_CWLength(" + str(len(codeBook[0])) \
+                       + ")_Holdout" + str(holdout) + "_Split" + str(split) + "_Threshold" \
+                       + str(threshold) +"_UnknownHoldoutClasses1_KnownHoldoutSamples" \
+                       + str(len(knownSingleDataPoints)) + "_PercentTrainingData" \
+                       + str(percentTraining) + ".png"
+        else:
+            saveInfo = saveFolderPath + "\\" + "_TestingThreshold_" + models[selectedClassifier - 1] + "_CB" + str(
+                codebookNum) + "_CWLength(" + str(len(codeBook[0])) \
+                       + ")_Holdout" + str(holdout) + "_Split" + str(split) + "_Threshold" \
+                       + str(threshold) + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
+                       + str(len(knownSingleDataPoints)) + "_PercentTrainingData" \
+                       + str(percentTraining) + ".png"
         plt.savefig(saveInfo, dpi = 300,
                     bbox_extra_artists = (lgd,), bbox_inches = 'tight')
         # plt.show()
-        plt.clf()
-
-    # Used to show histograms of the process of building the threshold. Should be used on
-    def graphBuildingThresholdHistogram(self, knownHDs, unknownHDs, threshold,
-                                        codebookNum, split, knownAcc,
-                                        unknownAcc, seed, holdout, allData,
-                                        unknownData, knownTrain, codeBook,
-                                        knownSingleDataPoints, saveFolderPath, selectedClassifier):
-        bins = np.arange(20)
-        ax = plt.subplot(111)
-        thresholdText = "Optimal Threshold: " + str(threshold)
-        title = "Codebook: " + str(codebookNum) + " Split: " + str(split) + " new" + "\n Seed: " + str(
-            seed) + "\n Holdout: " + str(holdout)
-        oldAccruacyText = "Known Classes: (" + str(round(knownAcc, 2)) + ")"
-        newAccuracyText = "Unknown Classes: (" + str(round(unknownAcc, 2)) + ")"
-
-        ax.hist([knownHDs], bins=bins - .5, alpha=1, label=oldAccruacyText, ec='black')
-        ax.hist([unknownHDs], bins=bins - .5, alpha=0.60, label=newAccuracyText, ec='black', color='green')
-        ax.axvline(x=threshold, color='r', linestyle='dashed', linewidth=3, label=thresholdText)
-        ax.set_xlabel("Minimum Hamming Distance")
-        ax.set_ylabel("Frequency")
-        ax.set_title(title)
-
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-
-        handles, labels = ax.get_legend_handles_labels()
-        lgd = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
-        knownData = len(allData) - len(unknownData)
-        percentTraining = round((len(knownTrain) / knownData), 2)
-        models = ["SVM", "DT", "LDA", "KNN"]
-        saveInfo = saveFolderPath + "\\" + models[selectedClassifier - 1] + "_CB" + str(
-            codebookNum) + "_CWLength(" + str(len(codeBook[0])) \
-                   + ")_Holdout" + str(holdout) + "_Split" + str(split) + "_Threshold" \
-                   + str(threshold) + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
-                   + str(len(knownSingleDataPoints)) + "_PercentTrainingData" \
-                   + str(percentTraining) + ".png"
-        plt.savefig(saveInfo, dpi=300,
-                    bbox_extra_artists=(lgd,), bbox_inches='tight')
-        plt.show()
         plt.clf()
 
     # Graphs the holdout class's HDs against the threshold.
@@ -444,3 +414,7 @@ class Visuals():
         plt.savefig(saveInfo)
         plt.show()
         plt.clf()
+
+
+    def generateConfusionMatrix(self):
+        pass

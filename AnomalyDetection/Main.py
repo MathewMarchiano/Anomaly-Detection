@@ -94,11 +94,13 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  optimalThreshold, lowestDifference, highestKnownAcc, highestUnknownAcc = \
                         tm.findOptimalThreshold(listOfThresholds, knownThresholdBuildingHDs, unknownThresholdBuildingHDs)
 
-                 vis.graphBuildingThresholdHistogram(knownThresholdBuildingHDs, unknownThresholdBuildingHDs, optimalThreshold,
+                 # Graphs histogram showing the process of building the threshold (different "view" of what this method
+                 # is showing slightly below).
+                 vis.graphThresholdTestHistogram(knownThresholdBuildingHDs, unknownThresholdBuildingHDs, optimalThreshold,
                                                  codebookNum, split, highestKnownAcc,
                                                  highestUnknownAcc, 12, holdout, allData,
                                                  unknownThresholdBuildingData, knownData, codebook,
-                                                 singleDataSamples, buildTresholdHistogramPath, classifier)
+                                                 singleDataSamples, buildTresholdHistogramPath, classifier, True)
 
 
 
@@ -123,11 +125,12 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  knownAccuracies.append(knownHoldoutDataThresholdAcc)
 
 
-                 #Graphing to see how threshold is performing:
+                 #Graphing to see how threshold is performing/testing threshold visualization:
                  vis.graphThresholdTestHistogram(singleDataSamplesHDs, holdoutClassHDs, optimalThreshold, codebookNum,
                                                 split, knownHoldoutDataThresholdAcc, unknownHoldoutDataThresholdAcc,
                                                 12, holdoutClass, trimmedAllData, unknownThresholdBuildingData, knownData,
-                                                codebook, singleDataSamples, folderPathHDs, classifier)
+                                                codebook, singleDataSamples, folderPathHDs, classifier, False)
+
              averagedKnownAccuracies = tm.averageThresholdAccuracies(knownAccuraciesToAverage)
              averagedUnknownAccuracies = tm.averageThresholdAccuracies(unknownAccuraciesToAverage)
              averagedBestKnownAcc = np.mean(highestKnownAccuracies)
