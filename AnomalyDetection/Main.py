@@ -59,7 +59,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
              highestUnknownAccuracies = []
              for holdout in holdoutIndices:
                  # Working with copies of the data so that we only need to import the data once per
-                 # Otherwise the data gets changed slightly per run (and this keeps it consistent)
+                 # Otherwise the data gets changed slightly per run.
                  trimmedAllData = initTrimmedAllData.copy()
                  trimmedAllOriginalLabels = initTrimmedAllOriginalLabels.copy()
                  scaledData = initScaledData.copy()
@@ -77,9 +77,8 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                          splitter.reduceThresholdBuildingSamples_FewestClasses(knownThresholdBuildingData,
                                                         unknownThresholdBuildingData, unknownThresholdBuildingLabels)
 
-                 knownECOCLabels = trainer.makeTrainingLabels(codewordColumns, knownLabels)
-
-                 listOfClassifiers = trainer.trainClassifiers(knownData, knownECOCLabels, classifier)
+                 knownCWLabels = trainer.convertLabelToCodeword(codewordColumns, knownLabels)
+                 listOfClassifiers = trainer.trainClassifiers(knownData, knownCWLabels, classifier)
 
                  # Getting predictions on all relevant data:
                  unknownThresholdBuildingPreds, holdoutClassPreds, singleDataSamplesPreds, knownThresholdBuildingPreds = \
@@ -87,16 +86,18 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                                                                  knownThresholdBuildingData, listOfClassifiers, trainer)
 
                  # Getting the shortest hamming distance that each prediction corresponds to:
-                 unknownECOCPreds, unknownThresholdBuildingHDs = \
-                     trainer.hammingDistanceUpdater(codebook, unknownThresholdBuildingPreds)
-                 holdoutClassECOCPreds, holdoutClassHDs = trainer.hammingDistanceUpdater(codebook, holdoutClassPreds)
-                 singleDataSamplesECOCPreds, singleDataSamplesHDs = trainer.hammingDistanceUpdater(codebook,
-                                                                                                singleDataSamplesPreds)
-                 knownValidationECOCPreds, knownThresholdBuildingHDs = trainer.hammingDistanceUpdater(codebook,
-                                                                                         knownThresholdBuildingPreds)
+                 unknownThresholdBuildingHDs, holdoutClassHDs, singleDataSamplesHDs, knownThresholdBuildingHDs = \
+                     getMinimumHammingDistanceLists(trainer, codebook, unknownThresholdBuildingPreds, holdoutClassPreds,
+                                                singleDataSamplesPreds, knownThresholdBuildingPreds)
 
                  optimalThreshold, lowestDifference, highestKnownAcc, highestUnknownAcc = \
                         tm.findOptimalThreshold(listOfThresholds, knownThresholdBuildingHDs, unknownThresholdBuildingHDs)
+
+                 # Updating the predicted codewords
+                 unknownECOCPreds = trainer.hammingDistanceUpdater(codebook, unknownThresholdBuildingPreds)
+                 holdoutClassECOCPreds = trainer.hammingDistanceUpdater(codebook, holdoutClassPreds)
+                 singleDataSamplesECOCPreds = trainer.hammingDistanceUpdater(codebook, singleDataSamplesPreds)
+                 knownValidationECOCPreds = trainer.hammingDistanceUpdater(codebook, knownThresholdBuildingPreds)
 
                  # Graphs histogram showing the process of building the threshold (different "view" of what this method
                  # is showing slightly below).
@@ -219,6 +220,33 @@ def getPredictions(unknownData, holdoutData, singleDataSamples, knownValidationD
 
     return unknownPreds, holdoutClassPreds, singleDataSamplesPreds, knownValidationPreds
 
+# Handles the updating of predicted codewords (i.e. "autocorrecting" a predicted codeword to the codeword in the
+# codebook with the shortest Hamming distance). If the codeword has a minimum HD greater than the value of the
+# threshold it will be labeled as "unknown" -- which is encoded by the value -1.
+def updatePredictions():
+    pass
+
+def getMinimumHammingDistanceLists(trainer, codebook, unknownThresholdBuildingPreds, holdoutClassPreds,
+                                   singleDataSamplesPreds, knownThresholdBuildingPreds):
+    unknownThresholdBuildingHDs = []
+    holdoutClassHDs = []
+    singleDataSamplesHDs = []
+    knownThresholdBuildingHDs = []
+
+    for prediction in unknownThresholdBuildingPreds:
+        unknownThresholdBuildingHDs.append(trainer.getMinimumHammingDistance(codebook, prediction))
+
+    for prediction in holdoutClassPreds:
+        holdoutClassHDs.append(trainer.getMinimumHammingDistance(codebook, prediction))
+
+    for prediction in singleDataSamplesPreds:
+        singleDataSamplesHDs.append(trainer.getMinimumHammingDistance(codebook, prediction))
+
+    for prediction in knownThresholdBuildingPreds:
+        knownThresholdBuildingHDs.append(trainer.getMinimumHammingDistance(codebook, prediction))
+
+    return unknownThresholdBuildingHDs, holdoutClassHDs, singleDataSamplesHDs, knownThresholdBuildingHDs
+
 # Parses a text file containing all of the information necessary to run "runAnomalyDetectionTests" in order to
 # retrieve all necessary variables. The only detail it doesn't include is the desired classifier to train with.
 def parseDatasetInfoFile(textFile):
@@ -292,3 +320,5 @@ print("Running...")
 runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
                          dataBeginColumn, dataEndColumn, chosenClassifier,
                          filePathAccGraph, filePathHDsGraph, ROCPath, buildThresholdHistogramPath)
+
+

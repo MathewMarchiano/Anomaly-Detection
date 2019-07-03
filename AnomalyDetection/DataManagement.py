@@ -236,7 +236,6 @@ class ThresholdManager():
 
         return (correctPredictionAmount / total)
 
-
 # Deals with processing the data retrieved from training. Includes graphing.
 class Visuals():
     # Graphs the number of instances of a particular hamming distance. Distinguishes between

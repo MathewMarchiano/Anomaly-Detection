@@ -9,10 +9,9 @@ class Trainer():
         pass
 
     # Use label dictionaries of "binarized" classes to convert all original labels to 0's and 1's based off of what they
-    # were assigned bya given classifier (column in codebook). Used for training every classifier later on.
-    def makeTrainingLabels(self, labelDictionaries, labels):
+    # were assigned bya given classifier (column in codebook).
+    def convertLabelToCodeword(self, labelDictionaries, labels):
         allUpdatedLabels = []
-
         for dictionary in labelDictionaries:
             tempLabelList = []
             for label in labels:
@@ -72,12 +71,12 @@ class Trainer():
     # closest to (with respect to hamming distance) in a given codebook. Will also return a list that
     # shows what the minimum hamming distances were when deciding which codeword to updated the predicted
     # codeword with.
-    def hammingDistanceUpdater(self, codebook, codewords):
+    def hammingDistanceUpdater(self, codebook, predictedCodewords):
         minHamWord = []
         # List containing actual CW based off of shortest HD
         UpdatedList = []
         minHamList = []
-        for predictedCode in codewords:
+        for predictedCode in predictedCodewords:
             minHam = len(predictedCode)
             for actualCode in codebook:
                 # GETTING MINIMUM HAMMING DISTANCE
@@ -93,7 +92,21 @@ class Trainer():
             minHamList.append(minHam)
 
 
-        return UpdatedList, minHamList
+        return UpdatedList
+
+
+    def getMinimumHammingDistance(self, codebook, predictedCodeword):
+        minHam = len(predictedCodeword)
+        # Checking all actual codewords to find the one that has the shortest HD
+        # to the predicted codeword
+        for actualCodeword in codebook:
+            hammingDistance = 0
+            for index in range(len(predictedCodeword)):
+                if actualCodeword[index] != predictedCodeword[index]:
+                    hammingDistance += 1
+            if hammingDistance < minHam:
+                minHam = hammingDistance
+        return minHam
 
     # Gets accuracy of predicted codewords when compared to
     # actual (i.e. validation) codewords
