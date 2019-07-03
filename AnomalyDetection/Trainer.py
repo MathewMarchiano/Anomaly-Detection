@@ -8,7 +8,7 @@ class Trainer():
     def __init__(self):
         pass
 
-    # Use label dictionaries of binarized classes to convert all original labels to 0's and 1's based off of what they
+    # Use label dictionaries of "binarized" classes to convert all original labels to 0's and 1's based off of what they
     # were assigned bya given classifier (column in codebook). Used for training every classifier later on.
     def makeTrainingLabels(self, labelDictionaries, labels):
         allUpdatedLabels = []
@@ -94,7 +94,6 @@ class Trainer():
 
 
         return UpdatedList, minHamList
-
 
     # Gets accuracy of predicted codewords when compared to
     # actual (i.e. validation) codewords

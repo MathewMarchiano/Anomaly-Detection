@@ -45,6 +45,11 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
          thresholdMeanDictionary = {}
 
          dh = DatasetHandler(codebook)
+         allData, allOriginalLabels = dh.getData(dataset, labelCol, beginDataCol, endDataCol)
+         savedOriginalLabels = allOriginalLabels.copy()  # All labels required for assignLabel() (not trimmed version)
+         initTrimmedAllData, initTrimmedAllOriginalLabels, initScaledData, codewordColumns = \
+                            processOriginalData(dh, allData, allOriginalLabels, savedOriginalLabels)
+
          codebookNum += 1
          for split in listOfNewSplits:
              # Used for ROC
@@ -53,12 +58,11 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
              highestKnownAccuracies = []
              highestUnknownAccuracies = []
              for holdout in holdoutIndices:
-                 allData, allOriginalLabels = dh.getData(dataset, labelCol, beginDataCol, endDataCol)
-
-                 savedOriginalLabels = allOriginalLabels.copy() # All labels required for assignLabel()
-
-                 trimmedAllData, trimmedAllOriginalLabels, scaledData, codewordColumns = \
-                                              processOriginalData(dh, allData, allOriginalLabels, savedOriginalLabels)
+                 # Working with copies of the data so that we only need to import the data once per
+                 # Otherwise the data gets changed slightly per run (and this keeps it consistent)
+                 trimmedAllData = initTrimmedAllData.copy()
+                 trimmedAllOriginalLabels = initTrimmedAllOriginalLabels.copy()
+                 scaledData = initScaledData.copy()
 
                  listOfUnknownClasses, listOfKnownClasses, holdoutClass = \
                      splitter.assignLabel(trimmedAllOriginalLabels, savedOriginalLabels, split, holdout)

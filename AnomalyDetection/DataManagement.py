@@ -264,11 +264,11 @@ class Visuals():
         ax.set_ylabel("Frequency")
         ax.set_title(title)
 
+        # Setting up the legend
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-
-
         handles, labels = ax.get_legend_handles_labels()
+        # For the line below, bbox_to_anchor manages where the legend will be located
         lgd = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
 
         knownData = len(allData) - len(unknownData)
