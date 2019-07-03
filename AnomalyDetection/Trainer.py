@@ -71,11 +71,17 @@ class Trainer():
     # closest to (with respect to hamming distance) in a given codebook. Will also return a list that
     # shows what the minimum hamming distances were when deciding which codeword to updated the predicted
     # codeword with.
-    def hammingDistanceUpdater(self, codebook, predictedCodewords):
-        minHamWord = []
-        # List containing actual CW based off of shortest HD
-        UpdatedList = []
-        minHamList = []
+    def hammingDistanceUpdater(self, codebook, predictedCodewords, threshold):
+        minHamWord = [] # List because codewords are represented as binary lists
+        unknownPrediction = []
+        # Predictions labeled as unknown will have a codeword with -1 for all of its indices.
+        # Using a for loop running for how many bits there are for a particular codeword so that
+        # this generalizes to all codeword sizes
+        for i in range(len(predictedCodewords[0])):
+            unknownPrediction.append(-1)
+        # List containing updated predicted CW based off of the shortest HD to all
+        # codewords in the codebook
+        updatedCodewordList = []
         for predictedCode in predictedCodewords:
             minHam = len(predictedCode)
             for actualCode in codebook:
@@ -87,14 +93,16 @@ class Trainer():
                 if hammingDistance < minHam:
                     minHam = hammingDistance
                     minHamWord = actualCode
+            if minHam > threshold:
+                minHamWord = unknownPrediction
 
-            UpdatedList.append(minHamWord)
-            minHamList.append(minHam)
+            updatedCodewordList.append(minHamWord)
 
+        return updatedCodewordList
 
-        return UpdatedList
-
-
+    # Sole purpose is to get the minimum Hamming distance for a predicted codeword
+    # Different than hammingDistanceUpdater() because sometimes we aren't going to want the
+    # actual codeword (in the codebook) that corresponds to the shortest HD.
     def getMinimumHammingDistance(self, codebook, predictedCodeword):
         minHam = len(predictedCodeword)
         # Checking all actual codewords to find the one that has the shortest HD

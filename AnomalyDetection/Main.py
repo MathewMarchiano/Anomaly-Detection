@@ -13,6 +13,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                              labelCol, beginDataCol, endDataCol, classifier, folderPathAcc,
                              folderPathHDs, ROCPath, buildTresholdHistogramPath):
 
+     # Determine which classes classes to cycle through
      holdoutIndices = getHoldoutIndices(dataset, labelCol, beginDataCol, endDataCol)
      iterationCount = 1
      optimalThresholds = []
@@ -27,6 +28,8 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
      vis = Visuals()
 
      for codebook in listOfCBs:
+         # All the dictionaries below are used in creating the graph of all
+         # the accuracies across all splits (accuraciesPlot())
          # Max
          unknownMaxAccDictionary = {}
          knownMaxAccDictionary = {}
@@ -94,21 +97,19 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                         tm.findOptimalThreshold(listOfThresholds, knownThresholdBuildingHDs, unknownThresholdBuildingHDs)
 
                  # Updating the predicted codewords
-                 unknownECOCPreds = trainer.hammingDistanceUpdater(codebook, unknownThresholdBuildingPreds)
-                 holdoutClassECOCPreds = trainer.hammingDistanceUpdater(codebook, holdoutClassPreds)
-                 singleDataSamplesECOCPreds = trainer.hammingDistanceUpdater(codebook, singleDataSamplesPreds)
-                 knownValidationECOCPreds = trainer.hammingDistanceUpdater(codebook, knownThresholdBuildingPreds)
+                 unknownECOCPreds, holdoutClassECOCPreds, singleDataSamplesECOCPreds, knownValidationECOCPreds = \
+                     updatePredictions(trainer, codebook, unknownThresholdBuildingPreds, holdoutClassPreds,
+                                   singleDataSamplesPreds, knownThresholdBuildingPreds, optimalThreshold)
 
                  # Graphs histogram showing the process of building the threshold (different "view" of what this method
                  # is showing slightly below).
+                 # The final argument "True" is used to determine where this function should save to file (read
+                 # function's comment in the DataManagement class to read more).
                  vis.graphThresholdTestHistogram(knownThresholdBuildingHDs, unknownThresholdBuildingHDs, optimalThreshold,
                                                  codebookNum, split, highestKnownAcc,
                                                  highestUnknownAcc, 12, holdout, allData,
                                                  unknownThresholdBuildingData, knownData, codebook,
                                                  singleDataSamples, buildTresholdHistogramPath, classifier, True)
-
-
-
 
                  # Data for generating ROC
                  knownAccuraciesAll, unknownAccuraciesAll = tm.testAllThresholds(listOfThresholds,
@@ -129,8 +130,9 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  unknownAccuracies.append(unknownHoldoutDataThresholdAcc)
                  knownAccuracies.append(knownHoldoutDataThresholdAcc)
 
-
                  #Graphing to see how threshold is performing/testing threshold visualization:
+                 # The final argument "False" is used to determine where this function should save to file (read
+                 # function's comment in the DataManagement class to read more).
                  vis.graphThresholdTestHistogram(singleDataSamplesHDs, holdoutClassHDs, optimalThreshold, codebookNum,
                                                 split, knownHoldoutDataThresholdAcc, unknownHoldoutDataThresholdAcc,
                                                 12, holdoutClass, trimmedAllData, unknownThresholdBuildingData, knownData,
@@ -223,8 +225,14 @@ def getPredictions(unknownData, holdoutData, singleDataSamples, knownValidationD
 # Handles the updating of predicted codewords (i.e. "autocorrecting" a predicted codeword to the codeword in the
 # codebook with the shortest Hamming distance). If the codeword has a minimum HD greater than the value of the
 # threshold it will be labeled as "unknown" -- which is encoded by the value -1.
-def updatePredictions():
-    pass
+def updatePredictions(trainer, codebook, unknownThresholdBuildingPreds, holdoutClassPreds, singleDataSamplesPreds,
+                      knownThresholdBuildingPreds, threshold):
+    unknownECOCPreds = trainer.hammingDistanceUpdater(codebook, unknownThresholdBuildingPreds, threshold)
+    holdoutClassECOCPreds = trainer.hammingDistanceUpdater(codebook, holdoutClassPreds, threshold)
+    singleDataSamplesECOCPreds = trainer.hammingDistanceUpdater(codebook, singleDataSamplesPreds, threshold)
+    knownValidationECOCPreds = trainer.hammingDistanceUpdater(codebook, knownThresholdBuildingPreds, threshold)
+
+    return unknownECOCPreds, holdoutClassECOCPreds, singleDataSamplesECOCPreds, knownValidationECOCPreds
 
 def getMinimumHammingDistanceLists(trainer, codebook, unknownThresholdBuildingPreds, holdoutClassPreds,
                                    singleDataSamplesPreds, knownThresholdBuildingPreds):
@@ -320,5 +328,4 @@ print("Running...")
 runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
                          dataBeginColumn, dataEndColumn, chosenClassifier,
                          filePathAccGraph, filePathHDsGraph, ROCPath, buildThresholdHistogramPath)
-
 
