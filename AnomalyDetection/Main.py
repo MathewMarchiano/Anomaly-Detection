@@ -60,6 +60,10 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
              unknownAccuraciesToAverage = []
              highestKnownAccuracies = []
              highestUnknownAccuracies = []
+
+             # Lists which will contain the data necessary to create a confusion matrix.
+             predictions = []
+             actuals = []
              for holdout in holdoutIndices:
                  # Working with copies of the data so that we only need to import the data once per
                  # Otherwise the data gets changed slightly per run.
@@ -96,10 +100,17 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  optimalThreshold, lowestDifference, highestKnownAcc, highestUnknownAcc = \
                         tm.findOptimalThreshold(listOfThresholds, knownThresholdBuildingHDs, unknownThresholdBuildingHDs)
 
-                 # Updating the predicted codewords
-                 unknownECOCPreds, holdoutClassECOCPreds, singleDataSamplesECOCPreds, knownValidationECOCPreds = \
+                 # Updating the predicted codewords. Used for creating confusion matrix (not needed otherwise, yet).
+                 unknownECOCPreds, holdoutClassECOCPreds, singleDataSamplesECOCPreds, knownThresholdBuildingECOCPreds = \
                      updatePredictions(trainer, codebook, unknownThresholdBuildingPreds, holdoutClassPreds,
                                    singleDataSamplesPreds, knownThresholdBuildingPreds, optimalThreshold)
+
+                 predictions.append(singleDataSamplesECOCPreds)
+                 # Labels aren't converted to codewords yet
+
+                 codewordSDSLabels =\
+                     trainer.toCodeword(trainer.convertLabelToCodeword(codewordColumns, singleDataSamplesLabels))
+                 actuals.append(codewordSDSLabels)
 
                  # Graphs histogram showing the process of building the threshold (different "view" of what this method
                  # is showing slightly below).
@@ -138,6 +149,8 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                                                 12, holdoutClass, trimmedAllData, unknownThresholdBuildingData, knownData,
                                                 codebook, singleDataSamples, folderPathHDs, classifier, False)
 
+
+             # ROC schenanigans
              averagedKnownAccuracies = tm.averageThresholdAccuracies(knownAccuraciesToAverage)
              averagedUnknownAccuracies = tm.averageThresholdAccuracies(unknownAccuraciesToAverage)
              averagedBestKnownAcc = np.mean(highestKnownAccuracies)
@@ -145,6 +158,10 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
              averagedBestThreshold = np.mean(optimalThresholds)
              vis.graphROC(averagedUnknownAccuracies, averagedKnownAccuracies, split, codebook, ROCPath,
                           classifier, averagedBestKnownAcc, averagedBestUnknownAcc, averagedBestThreshold, codebookNum)
+
+             # Confusion matrix stuff
+             cwLabels = trainer.toCodeword(trainer.convertLabelToCodeword(codewordColumns, trimmedAllOriginalLabels))
+             print(vis.generateConfusionMatrix(predictions, actuals, holdoutIndices, codebook))
 
              printResults(unknownAccuracies, knownAccuracies, optimalThresholds, codebookNum, split)
 
@@ -329,3 +346,9 @@ runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColum
                          dataBeginColumn, dataEndColumn, chosenClassifier,
                          filePathAccGraph, filePathHDsGraph, ROCPath, buildThresholdHistogramPath)
 
+# v = Visuals()
+# predictedValues = [["A", "B", "A", "32"], ["B", "B", "A", "32"]]
+# actualValues = [["A", "B", "C", "D"], ["A", "B", "C", "D"]]
+# labels = ["A", "B", "C", "D"]
+# holdouts = [1,2]
+# print(v.generateConfusionMatrix(predictedValues, actualValues, labels, holdouts, labels))

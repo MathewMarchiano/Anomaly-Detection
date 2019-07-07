@@ -5,6 +5,7 @@ from numpy import genfromtxt
 import random
 from sklearn.preprocessing.imputation import Imputer
 import matplotlib.pyplot as plt
+from AnomalyDetection.Trainer import  Trainer
 
 # Retrieves and processes the data from a given CSV file or web address. Also deals with relabeling original labels into
 # labels dictated by the classifiers of a given codebook.
@@ -415,5 +416,41 @@ class Visuals():
         plt.clf()
 
 
-    def generateConfusionMatrix(self):
-        pass
+    def generateConfusionMatrix(self, predictedValues, actualValues, holdouts, codebook):
+        # numUniqueLabels has 1 added to it in order to account for the unknown label
+        numUniqueLabels = len(codebook) + 1
+        confusionMatrix = []
+        # Create an (numUniqueLabels)x(numUniqueLabels) confusion matrix
+        # Add the rows
+        for row in range(numUniqueLabels):
+            confusionMatrix.append([])
+        # Add the columns
+        for row in confusionMatrix:
+            for column in range(numUniqueLabels):
+                row.append(0)
+
+        # Predictions and actual values for a particular holdout
+        for predictions, actuals in zip(predictedValues, actualValues):
+            # Individual predictions and actual values
+            for prediction, actual in zip(predictions, actuals):
+                # If prediction is labeled as known, find row and column that it should
+                # be graphed at
+                if prediction in codebook:
+                    rowNumber = codebook.index(actual)
+                    columnNumber = codebook.index( prediction)
+                    confusionMatrix[rowNumber][columnNumber] += 1
+                # Otherwise, the prediction is unknown. put it in the lower right corner of the
+                # confusion matrix.
+                else:
+                    rowNumber = codebook.index(actual)
+                    confusionMatrix[rowNumber][numUniqueLabels - 1] += 1
+
+        # Average confusion matrix across all holdouts:
+        # numHoldouts = len(holdouts)
+        # for row in range(len(confusionMatrix)):
+        #     for column in range(len(confusionMatrix)):
+        #         confusionMatrix[row][column] /= float(numHoldouts)
+
+        return confusionMatrix
+
+
