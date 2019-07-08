@@ -5,7 +5,7 @@ from numpy import genfromtxt
 import random
 from sklearn.preprocessing.imputation import Imputer
 import matplotlib.pyplot as plt
-from AnomalyDetection.Trainer import  Trainer
+import seaborn as sn
 
 # Retrieves and processes the data from a given CSV file or web address. Also deals with relabeling original labels into
 # labels dictated by the classifiers of a given codebook.
@@ -416,22 +416,19 @@ class Visuals():
         plt.clf()
 
 
-    def generateConfusionMatrix(self, predictedValues, actualValues, holdouts, codebook):
+    def generateConfusionMatrix(self, predictedValues, actualValues, codebook, saveFolderPath, selectedModel,
+                                        codebookNum, codeBook, split):
         # numUniqueLabels has 1 added to it in order to account for the unknown label
         numUniqueLabels = len(codebook) + 1
         confusionMatrix = []
         # Create an (numUniqueLabels)x(numUniqueLabels) confusion matrix
-        # Add the rows
         for row in range(numUniqueLabels):
             confusionMatrix.append([])
-        # Add the columns
         for row in confusionMatrix:
             for column in range(numUniqueLabels):
                 row.append(0)
 
-        # Predictions and actual values for a particular holdout
         for predictions, actuals in zip(predictedValues, actualValues):
-            # Individual predictions and actual values
             for prediction, actual in zip(predictions, actuals):
                 # If prediction is labeled as known, find row and column that it should
                 # be graphed at
@@ -439,18 +436,48 @@ class Visuals():
                     rowNumber = codebook.index(actual)
                     columnNumber = codebook.index( prediction)
                     confusionMatrix[rowNumber][columnNumber] += 1
-                # Otherwise, the prediction is unknown. put it in the lower right corner of the
-                # confusion matrix.
+                # Otherwise, the prediction is unknown
                 else:
                     rowNumber = codebook.index(actual)
                     confusionMatrix[rowNumber][numUniqueLabels - 1] += 1
 
-        # Average confusion matrix across all holdouts:
-        # numHoldouts = len(holdouts)
-        # for row in range(len(confusionMatrix)):
-        #     for column in range(len(confusionMatrix)):
-        #         confusionMatrix[row][column] /= float(numHoldouts)
+        # Show confusion matrix before the averaging
+        plt.figure(figsize=(20, 15))
+        ax = plt.subplot()
+        sn.heatmap(confusionMatrix, annot=True, ax=ax)
+        ax.set_xlabel('Predictions')
+        ax.set_ylabel('True Values')
+        ax.set_title('Confusion Matrix')
+        models = ["SVM", "DT", "LDA", "KNN"]
+        saveInfo = saveFolderPath + "\\" + "_Original_" + models[selectedModel - 1] + "_CB" + str(codebookNum) + "_CWLength(" + str(
+            len(codeBook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
+        plt.savefig(saveInfo, dpi=100)
+        plt.show()
+        plt.clf()
 
-        return confusionMatrix
+        # Average confusion matrix across row-wise:
+        cmDimension = len(confusionMatrix)
+        for row in range(cmDimension):
+            rowSum = 0
+            for column in range(cmDimension):
+                rowSum += confusionMatrix[row][column]
+            if rowSum > 0:
+                for column in range(cmDimension):
+                    confusionMatrix[row][column] = round(confusionMatrix[row][column]/rowSum, 2)
+
+        # Show confusion matrix after averaging row-wise
+        plt.figure(figsize=(20, 15))
+        ax = plt.subplot()
+        sn.heatmap(confusionMatrix, annot=True, ax=ax)
+        ax.set_xlabel('Predictions')
+        ax.set_ylabel('True Values')
+        ax.set_title('Confusion Matrix')
+        models = ["SVM", "DT", "LDA", "KNN"]
+        saveInfo = saveFolderPath + "\\" + "_Averaged_" + models[selectedModel - 1] + "_CB" + str(
+            codebookNum) + "_CWLength(" + str(
+            len(codeBook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
+        plt.savefig(saveInfo, dpi=100)
+        plt.show()
+        plt.clf()
 
 

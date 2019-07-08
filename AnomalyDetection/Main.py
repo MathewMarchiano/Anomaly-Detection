@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 
 def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, dataset,
                              labelCol, beginDataCol, endDataCol, classifier, folderPathAcc,
-                             folderPathHDs, ROCPath, buildTresholdHistogramPath):
+                             folderPathHDs, ROCPath, buildTresholdHistogramPath, confusionMatrixPath):
 
      # Determine which classes classes to cycle through
      holdoutIndices = getHoldoutIndices(dataset, labelCol, beginDataCol, endDataCol)
@@ -150,7 +150,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                                                 codebook, singleDataSamples, folderPathHDs, classifier, False)
 
 
-             # ROC schenanigans
+             # ROC
              averagedKnownAccuracies = tm.averageThresholdAccuracies(knownAccuraciesToAverage)
              averagedUnknownAccuracies = tm.averageThresholdAccuracies(unknownAccuraciesToAverage)
              averagedBestKnownAcc = np.mean(highestKnownAccuracies)
@@ -159,9 +159,9 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
              vis.graphROC(averagedUnknownAccuracies, averagedKnownAccuracies, split, codebook, ROCPath,
                           classifier, averagedBestKnownAcc, averagedBestUnknownAcc, averagedBestThreshold, codebookNum)
 
-             # Confusion matrix stuff
-             cwLabels = trainer.toCodeword(trainer.convertLabelToCodeword(codewordColumns, trimmedAllOriginalLabels))
-             print(vis.generateConfusionMatrix(predictions, actuals, holdoutIndices, codebook))
+             # Confusion matrix
+             vis.generateConfusionMatrix(predictions, actuals, codebook, confusionMatrixPath, classifier, codebookNum,
+                                         codebook, split)
 
              printResults(unknownAccuracies, knownAccuracies, optimalThresholds, codebookNum, split)
 
@@ -293,8 +293,9 @@ def parseDatasetInfoFile(textFile):
     param11 = 'dataEndColumn'
     param12 = 'filePathROC'
     param13 = 'filePathBuildThresholdHistogram'
+    param14 = 'filePathConfusionMatrix'
     listOfUnsetParams = [param1, param2, param3, param4, param5, param6, param7,
-                         param8, param9, param10, param11, param12, param13]
+                         param8, param9, param10, param11, param12, param13, param14]
     paramValueDictionary = {}
     for unsetParam in listOfUnsetParams:
         paramValueDictionary[unsetParam] = -1
@@ -320,16 +321,18 @@ def parseDatasetInfoFile(textFile):
     dataEndColumn = int(paramValueDictionary[param11])
     filePathROC = paramValueDictionary[param12]
     filePathBuildingThresholdHistogram = paramValueDictionary[param13]
+    filePathConfusionMatrix = paramValueDictionary[param14]
 
     return codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
-           labelsColumn, dataBeginColumn, dataEndColumn, filePathROC, filePathBuildingThresholdHistogram
+           labelsColumn, dataBeginColumn, dataEndColumn, filePathROC, filePathBuildingThresholdHistogram, \
+           filePathConfusionMatrix
 
 
 print("Please enter the path to your parameter value file")
 parameterValueFile = input().replace('"', '')
 print(parameterValueFile)
 codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
-                    labelsColumn, dataBeginColumn, dataEndColumn, ROCPath, buildThresholdHistogramPath = \
+                    labelsColumn, dataBeginColumn, dataEndColumn, ROCPath, buildThresholdHistogramPath, confusionMatrixPath = \
                     parseDatasetInfoFile(parameterValueFile)
 listOfCBs = [codebook1, codebook2, codebook3]
 
@@ -344,11 +347,13 @@ print(classifiers[chosenClassifier - 1], "chosen.")
 print("Running...")
 runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
                          dataBeginColumn, dataEndColumn, chosenClassifier,
-                         filePathAccGraph, filePathHDsGraph, ROCPath, buildThresholdHistogramPath)
+                         filePathAccGraph, filePathHDsGraph, ROCPath, buildThresholdHistogramPath, confusionMatrixPath)
 
 # v = Visuals()
 # predictedValues = [["A", "B", "A", "32"], ["B", "B", "A", "32"]]
 # actualValues = [["A", "B", "C", "D"], ["A", "B", "C", "D"]]
 # labels = ["A", "B", "C", "D"]
 # holdouts = [1,2]
-# print(v.generateConfusionMatrix(predictedValues, actualValues, labels, holdouts, labels))
+# path = "D:\ECOC\ConfusionMatrixFigures\TEST"
+# cb = [[1], [1], [0]]
+# v.generateConfusionMatrix(predictedValues, actualValues, labels, path, 1, 2, cb, .25)
