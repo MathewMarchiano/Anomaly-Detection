@@ -2,14 +2,16 @@ from BaselineTesting.BaselinePredictions import Predictor
 from BaselineTesting.BaselinePredictions import DataManager
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
+import numpy as np
 
-pred = Predictor("D:\ECOC\DownloadedDatasets\AmazonCommerceReviews.csv")
+pred = Predictor()
 dm = DataManager()
 models = ["SVM", "DT", "LDA", "KNN", "RandomForest"]
+dataset = "D:\ECOC\DownloadedDatasets\OlivettiFaces.csv"
 
 for i in range(1,6):
     for runs in range(1):
-        X, y = dm.getData(-1, 0, 10000)
+        X, y = dm.getData(-1, 0, 4096, dataset)
 
         indicesToRemove, dataToRemove, labelsToRemove = dm.getSmallClasses(X, y)
         X, y = dm.removeSmallClasses(X, y, indicesToRemove)
@@ -19,10 +21,11 @@ for i in range(1,6):
         train_X, val_X, train_Y, val_Y = train_test_split(X, y, test_size=.20)
 
         model = pred.trainModel(train_X, train_Y, i)
+        print(model)
         print("Getting scores")
         scores = cross_val_score(model, X, y, cv=5)
 
-        print(models[i-1] + ":", scores)
+        print(models[i-1] + ":", np.mean(scores))
 
 
 

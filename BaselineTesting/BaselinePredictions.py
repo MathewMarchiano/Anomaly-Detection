@@ -11,8 +11,8 @@ from sklearn.ensemble import RandomForestClassifier
 
 
 class Predictor():
-    def __init__(self, dataset):
-        self.dataset = dataset
+    def __init__(self):
+        pass
 
     def trainModel(self, data, labels, model):
         if model == 1:
@@ -27,7 +27,7 @@ class Predictor():
             classifier = RandomForestClassifier(n_estimators=100, max_depth=2)
         else:
             print("Specify Classifier")
-        # classifier = classifier.fit(data, labels)
+        classifier = classifier.fit(data, labels)
 
         return classifier
 
@@ -36,10 +36,10 @@ class DataManager:
     def __init__(self):
         pass
 
-    def getData(self, labelsColumn, dataBeginIndex, dataEndIndex):
-        importedDataset = pd.read_csv(self.dataset, header=None)
+    def getData(self, labelsColumn, dataBeginIndex, dataEndIndex, dataset):
+        importedDataset = pd.read_csv(dataset, header=None)
         numColumns = len(importedDataset.columns)
-        dataValues = genfromtxt(self.dataset, delimiter=',', usecols=range(dataBeginIndex, dataEndIndex)).tolist()
+        dataValues = genfromtxt(dataset, delimiter=',', usecols=range(dataBeginIndex, dataEndIndex)).tolist()
 
         # 1 == labels are in the first column. -1 == labels are in the last column
         if (labelsColumn == 1):
