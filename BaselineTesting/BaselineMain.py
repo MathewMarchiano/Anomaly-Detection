@@ -1,18 +1,28 @@
 from BaselineTesting.BaselinePredictions import Predictor
+from BaselineTesting.BaselinePredictions import DataManager
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
 
-pred = Predictor("https://archive.ics.uci.edu/ml/machine-learning-databases/letter-recognition/letter-recognition.data")
+pred = Predictor("D:\ECOC\DownloadedDatasets\AmazonCommerceReviews.csv")
+dm = DataManager()
+models = ["SVM", "DT", "LDA", "KNN", "RandomForest"]
+
+for i in range(1,6):
+    for runs in range(1):
+        X, y = dm.getData(-1, 0, 10000)
+
+        indicesToRemove, dataToRemove, labelsToRemove = dm.getSmallClasses(X, y)
+        X, y = dm.removeSmallClasses(X, y, indicesToRemove)
+        X = dm.preprocessData(X)
 
 
-for runs in range(10):
-    X, y = pred.getData(1, 1, 16)
-    X = pred.preprocessData(X)
+        train_X, val_X, train_Y, val_Y = train_test_split(X, y, test_size=.20)
 
-    train_X, val_X, train_Y, val_Y = train_test_split(X, y, test_size=.20, random_state=12)
+        model = pred.trainModel(train_X, train_Y, i)
+        print("Getting scores")
+        scores = cross_val_score(model, X, y, cv=5)
 
-    model = pred.trainModel(train_X, train_Y, 2)
-
-    print(model.score(val_X, val_Y))
+        print(models[i-1] + ":", scores)
 
 
 

@@ -7,14 +7,34 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing.imputation import Imputer
 from sklearn import preprocessing
 import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
 
 
 class Predictor():
-
-    dataset = ""
-
     def __init__(self, dataset):
         self.dataset = dataset
+
+    def trainModel(self, data, labels, model):
+        if model == 1:
+            classifier = svm.SVC(gamma='auto')
+        elif model == 2:
+            classifier = DecisionTreeClassifier(random_state=0)
+        elif model == 3:
+            classifier = LinearDiscriminantAnalysis()
+        elif model == 4:
+            classifier = KNeighborsClassifier(n_neighbors=2)
+        elif model == 5:
+            classifier = RandomForestClassifier(n_estimators=100, max_depth=2)
+        else:
+            print("Specify Classifier")
+        # classifier = classifier.fit(data, labels)
+
+        return classifier
+
+class DataManager:
+
+    def __init__(self):
+        pass
 
     def getData(self, labelsColumn, dataBeginIndex, dataEndIndex):
         importedDataset = pd.read_csv(self.dataset, header=None)
@@ -37,19 +57,31 @@ class Predictor():
 
         return scaledData
 
-    def trainModel(self, data, labels, model):
-        if model == 1:
-            classifier = svm.SVC(gamma='auto')
-        elif model == 2:
-            classifier = DecisionTreeClassifier(random_state=0)
-        elif model == 3:
-            classifier = LinearDiscriminantAnalysis()
-        elif model == 4:
-            classifier = KNeighborsClassifier(n_neighbors=2)
-        else:
-            print("Specify Classifier")
-        classifier = classifier.fit(data, labels)
+    def getSmallClasses(self, data, labels):
+        uniqueLabels = np.unique(labels)
+        labelsToRemove = []
+        dataToRemove = []
+        indicesToRemove = []
 
-        return classifier
+        for uniqueLabel in uniqueLabels:
+            indices = []
+            index = 0
+            for label in labels:
+                if label == uniqueLabel:
+                    indices.append(index)
+                index += 1
+            if (len(indices) < 3):
+                for index in indices:
+                    labelsToRemove.append(labels[index])
+                    dataToRemove.append(data[index])
+                    indicesToRemove.append(index)
 
+        return indicesToRemove, dataToRemove, labelsToRemove
 
+    def removeSmallClasses(self, data, labels, indicesToRemove):
+        sortedIndicies = sorted(indicesToRemove, reverse=True)
+        for index in sortedIndicies:
+            del labels[index]
+            del data[index]
+
+        return data, labels
