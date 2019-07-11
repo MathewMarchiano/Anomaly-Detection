@@ -7,24 +7,18 @@ import numpy as np
 pred = Predictor()
 dm = DataManager()
 models = ["SVM", "DT", "LDA", "KNN", "RandomForest"]
-dataset = "D:\ECOC\DownloadedDatasets\OlivettiFaces.csv"
+dataset = "D:\ECOC\DownloadedDatasets\Robert.csv"
 
 for i in range(1,6):
     for runs in range(1):
-        X, y = dm.getData(-1, 0, 4096, dataset)
-
+        X, y = dm.getData(1, 1, 7200, dataset)
         indicesToRemove, dataToRemove, labelsToRemove = dm.getSmallClasses(X, y)
         X, y = dm.removeSmallClasses(X, y, indicesToRemove)
         X = dm.preprocessData(X)
-
-
         train_X, val_X, train_Y, val_Y = train_test_split(X, y, test_size=.20)
-
         model = pred.trainModel(train_X, train_Y, i)
-        print(model)
         print("Getting scores")
         scores = cross_val_score(model, X, y, cv=5)
-
         print(models[i-1] + ":", np.mean(scores))
 
 
