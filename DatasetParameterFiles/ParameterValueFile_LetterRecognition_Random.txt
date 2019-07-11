@@ -11,3 +11,4 @@ D:\ECOC\HammingDistanceHistograms\LetterRecognition\Random
 16
 D:\ECOC\ROCFigures\LetterRecognition\Random
 D:\ECOC\BuildingThresholdHistograms\LetterRecognition\Random
+D:\ECOC\ConfusionMatrixFigures\LetterRecognition\Random
