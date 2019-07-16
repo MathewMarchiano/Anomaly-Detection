@@ -84,6 +84,10 @@ class Splitter():
         uniqueLabels = np.unique(allLabels).tolist()
         numUnknown = int(len(uniqueTrimmedLabels) * percentUnknown) # Casting to int because whole numbers are required.
 
+        # Ensure that at least one class is being used as a holdout
+        if numUnknown == 0:
+            numUnknown = 1
+
         #Remove holdout class from selection of labels.
         # We select from the unique labels that haven't been trimmed yet because the indices that have been
         # chosen to be holdouts correspond to the list of all unique labels.
