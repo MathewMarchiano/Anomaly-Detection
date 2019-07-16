@@ -81,7 +81,7 @@ def parseDatasetInfoFile(textFile):
            labelsColumn, dataBeginColumn, dataEndColumn, filePathROC, filePathBuildingThresholdHistogram, \
            filePathConfusionMatrix
 
-def clusteringTest(dataset, labelCol, beginDataCol, endDataCol, listOfSplits):
+def clusteringTest(dataset, labelCol, beginDataCol, endDataCol, listOfSplits, thresholds):
     cb = [0]  # Only needed for the creation of DatasetHandler object ("real" codebooks  only needed for
               # for anomaly detection testing using ECOC method.
     SP = Splitter()
@@ -116,7 +116,7 @@ def clusteringTest(dataset, labelCol, beginDataCol, endDataCol, listOfSplits):
             # SingleDataSamples and holdoutData are used to test the model because the same splits of data are used to
             # test the threshold in the ECOC anomaly detection approach.
             unknownPredictionAccuracy, knownPredictionAccuracy = \
-                CAD.runAnomalyDetectionTests(knownThresholdBuildingData, singleDataSamples, holdoutData)
+                CAD.runAnomalyDetectionTests(knownThresholdBuildingData, singleDataSamples, holdoutData, thresholds)
 
             knownPredictionAccuracies.append((knownPredictionAccuracy))
             unknownPredictionAccuracies.append((unknownPredictionAccuracy))
@@ -130,4 +130,4 @@ codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGra
            labelsColumn, dataBeginColumn, dataEndColumn, filePathROC, filePathBuildingThresholdHistogram, \
            filePathConfusionMatrix = parseDatasetInfoFile(textFilePath)
 
-clusteringTest(datasetPath, labelsColumn, dataBeginColumn, dataEndColumn, splits)
+clusteringTest(datasetPath, labelsColumn, dataBeginColumn, dataEndColumn, splits, thresholds)
