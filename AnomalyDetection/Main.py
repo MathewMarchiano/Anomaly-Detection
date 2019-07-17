@@ -1,5 +1,5 @@
 from AnomalyDetection.DataManagement import DatasetHandler
-from AnomalyDetection.DataManagement import ThresholdManager
+from AnomalyDetection.ThresholdManagement import ThresholdManager
 from AnomalyDetection.DataManagement import Visuals
 from AnomalyDetection.Splitter import Splitter
 from AnomalyDetection.Trainer import Trainer

@@ -38,7 +38,7 @@ class Trainer():
             elif model == 4:
                 classifier = KNeighborsClassifier(n_neighbors=15)
             elif model == 5:
-                classifier = LogisticRegression(random_state=1, solver='saga', multi_class='multinomial')
+                classifier = LogisticRegression(random_state=1)
             elif model == 6:
                 classifier = MLPClassifier(random_state=1)
             elif model == 7:
