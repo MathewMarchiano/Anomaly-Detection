@@ -13,8 +13,9 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                              labelCol, beginDataCol, endDataCol, classifier, folderPathAcc,
                              folderPathHDs, ROCPath, buildTresholdHistogramPath, confusionMatrixPath):
 
-     # Determine which classes classes to cycle through
+     # Determine which classes classes to cycle through (ignoring 'small' classes)
      holdoutIndices = getHoldoutIndices(dataset, labelCol, beginDataCol, endDataCol)
+
      iterationCount = 1
      optimalThresholds = []
      listOfDifferences = []
@@ -106,8 +107,8 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                                    singleDataSamplesPreds, knownThresholdBuildingPreds, optimalThreshold)
 
                  predictions.append(singleDataSamplesECOCPreds)
-                 # Labels aren't converted to codewords yet
 
+                 # Labels aren't converted to codewords yet
                  codewordSDSLabels =\
                      trainer.toCodeword(trainer.convertLabelToCodeword(codewordColumns, singleDataSamplesLabels))
                  actuals.append(codewordSDSLabels)
@@ -341,19 +342,14 @@ print("\tFor SVM, enter 1.")
 print("\tFor DT, enter 2.")
 print("\tFor LDA, enter 3.")
 print("\tFor KNN, enter 4.")
+print("\tFor Logistic Regression, enter 5.")
+print("\tFor Neural Network, enter 6.")
+print("\tFor Naive Bayes, enter 7.")
+print("\tFor Random Forest, enter 8.")
 chosenClassifier = int(input())
-classifiers = ["SVM", "DT", "LDA", "KNN"]
+classifiers = ["SVM", "DT", "LDA", "KNN", "Logistic Regression", "Neural Network", "Naive Bayes", "Random Forest"]
 print(classifiers[chosenClassifier - 1], "chosen.")
 print("Running...")
 runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
                          dataBeginColumn, dataEndColumn, chosenClassifier,
                          filePathAccGraph, filePathHDsGraph, ROCPath, buildThresholdHistogramPath, confusionMatrixPath)
-
-# v = Visuals()
-# predictedValues = [["A", "B", "A", "32"], ["B", "B", "A", "32"]]
-# actualValues = [["A", "B", "C", "D"], ["A", "B", "C", "D"]]
-# labels = ["A", "B", "C", "D"]
-# holdouts = [1,2]
-# path = "D:\ECOC\ConfusionMatrixFigures\TEST"
-# cb = [[1], [1], [0]]
-# v.generateConfusionMatrix(predictedValues, actualValues, labels, path, 1, 2, cb, .25)

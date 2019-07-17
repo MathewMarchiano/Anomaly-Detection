@@ -273,7 +273,7 @@ class Visuals():
 
         knownData = len(allData) - len(unknownData)
         percentTraining = round((len(knownTrain) / knownData), 2)
-        models = ["SVM", "DT", "LDA", "KNN"]
+        models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest"]
         if isBuilding:
             saveInfo = saveFolderPath + "\\" + "_BuildingThreshold_" + models[selectedClassifier - 1] +"_CB"+ str(codebookNum) + "_CWLength(" + str(len(codeBook[0])) \
                        + ")_Holdout" + str(holdout) + "_Split" + str(split) + "_Threshold" \
@@ -309,7 +309,7 @@ class Visuals():
         plt.ylabel("Frequency")
         plt.title(title)
         plt.legend(loc='upper right')
-        models = ["SVM", "DT", "LDA", "KNN"]
+        models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest"]
         plt.savefig(saveFolderPath + "\\" + str(holdout) + "_" + str(split)
                     + "_" + str(threshold) + "_" + str(codebookNum) + "_" + models[selectedClassifier - 1] + ".png")
         # plt.show()
@@ -332,7 +332,7 @@ class Visuals():
         plt.ylabel("Frequency")
         plt.title(title)
         plt.legend(loc='upper right')
-        models = ["SVM", "DT", "LDA", "KNN"]
+        models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest"]
         plt.savefig(saveFolderPath + "\\" + str(holdout) + "_" + str(split)
                     + "_" + str(threshold) + "_" + str(codebookNum) + "_" + models[selectedClassifier - 1] +".png")
         plt.show()
@@ -376,7 +376,7 @@ class Visuals():
 
         knownData = len(allData) - len(unknownData)
         percentTraining = round((len(knownTrain)/knownData), 2)
-        models = ["SVM", "DT", "LDA", "KNN"] # Corresponds to the number assigned for each classifier in Trainer.py
+        models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest"] # Corresponds to the number assigned for each classifier in Trainer.py
         # selectedModel has 1 subtracted from it because the models in the Trainer class are assigned with numbers
         # 1 - 4.
         saveInfo = saveFolderPath + "\\" + models[selectedModel - 1] +"_CB" + str(codebookNum) +"_CWLength(" + str(
@@ -408,7 +408,7 @@ class Visuals():
         roundedBestAcc = round(bestUnknownAcc, 2)
         ax.scatter(bestFPR, bestUnknownAcc, color='red', label="Avg. Optimal Threshold=" + str(roundedAvgOptimalThreshold) + "\nAccuracy=" + str(roundedBestAcc))
         ax.legend(loc='lower right')
-        models = ["SVM", "DT", "LDA", "KNN"]
+        models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest"]
         saveInfo = saveFolderPath + "\\" + models[selectedModel - 1] + "_CB"+ str(codebookNum) + "_CWLength(" + str(
             len(codeBook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
         plt.savefig(saveInfo)
@@ -448,7 +448,7 @@ class Visuals():
         ax.set_xlabel('Predictions')
         ax.set_ylabel('True Values')
         ax.set_title('Confusion Matrix')
-        models = ["SVM", "DT", "LDA", "KNN"]
+        models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest"]
         saveInfo = saveFolderPath + "\\" + "_Original_" + models[selectedModel - 1] + "_CB" + str(codebookNum) + "_CWLength(" + str(
             len(codeBook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
         plt.savefig(saveInfo, dpi=100)
@@ -472,7 +472,7 @@ class Visuals():
         ax.set_xlabel('Predictions')
         ax.set_ylabel('True Values')
         ax.set_title('Confusion Matrix')
-        models = ["SVM", "DT", "LDA", "KNN"]
+        models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest"]
         saveInfo = saveFolderPath + "\\" + "_Averaged_" + models[selectedModel - 1] + "_CB" + str(
             codebookNum) + "_CWLength(" + str(
             len(codeBook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"

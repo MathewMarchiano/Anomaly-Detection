@@ -107,6 +107,35 @@ class Splitter():
 
         return listOfUnknownClasses, listOfKnownClasses, holdoutClass
 
+    # Determines whether a label will be known, unknown, or holdout.
+    def assignLabel_TernarySymbol(self, trimmedLabels, allLabels, percentUnknown, holdoutIndex):
+        uniqueTrimmedLabels = np.unique(trimmedLabels).tolist()
+        uniqueLabels = np.unique(allLabels).tolist()
+        numUnknown = int(len(uniqueTrimmedLabels) * percentUnknown) # Casting to int because whole numbers are required.
+
+        # Ensure that at least one class is being used as a holdout
+        if numUnknown == 0:
+            numUnknown = 1
+
+        #Remove holdout class from selection of labels.
+        # We select from the unique labels that haven't been trimmed yet because the indices that have been
+        # chosen to be holdouts correspond to the list of all unique labels.
+        holdoutClass = uniqueLabels[holdoutIndex]
+        # Remove the chosen holdout from the list of trimmed labels so that the holdout cannot be chosen as a known or
+        # unknown class.
+        uniqueTrimmedLabels.remove(holdoutClass)
+        # Randomly select which classes will be unknown.
+        # We use the trimmed set of labels now becausae we only want to use classes that have enough
+        # samples of data.
+        listOfUnknownClasses = random.sample(uniqueTrimmedLabels, numUnknown)
+        #Create list of what the known classes will be.
+        listOfKnownClasses = []
+        for label in uniqueTrimmedLabels:
+            if label not in listOfUnknownClasses:
+                listOfKnownClasses.append(label)
+
+        return listOfUnknownClasses, listOfKnownClasses, holdoutClass
+
     # Splits the data and labels into separate lists of holdout, known, or unknown.
     # Will also deal with splitting of the known data through use of knownDataSplit().
     def splitDataAndLabels(self, data, allOrigLabels, unknownClasses, holdoutClass):
@@ -221,5 +250,3 @@ class Splitter():
             reducedThresholdBuildingLabels.append(largerSplitLabels[index])
 
         return reducedThresholdBuildingData, reducedThresholdBuildingLabels
-
-
