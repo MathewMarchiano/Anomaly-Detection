@@ -5,13 +5,15 @@ from AnomalyDetection.Splitter import Splitter
 from AnomalyDetection.Trainer import Trainer
 import numpy as np
 import ast
+from AnomalyDetection.TernaryOperations import TernaryOperator
 
 import warnings
 warnings.filterwarnings("ignore")
 
-def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, dataset,
+def runAnomalyDetectionTests_Ternary(listOfCBs, listOfThresholds, listOfNewSplits, dataset,
                              labelCol, beginDataCol, endDataCol, classifier, folderPathAcc,
-                             folderPathHDs, ROCPath, buildTresholdHistogramPath, confusionMatrixPath):
+                             folderPathHDs, ROCPath, buildTresholdHistogramPath, confusionMatrixPath, ternarySymbol,
+                             percentTernarySymbols):
 
      # Determine which classes classes to cycle through (ignoring 'small' classes)
      holdoutIndices = getHoldoutIndices(dataset, labelCol, beginDataCol, endDataCol)
@@ -27,8 +29,12 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
      trainer = Trainer()
      tm = ThresholdManager()
      vis = Visuals()
+     TO = TernaryOperator()
 
      for codebook in listOfCBs:
+         # Update codebook to have ternary symbols
+         codebook = TO.generateTernaryCodebook(codebook, ternarySymbol, percentTernarySymbols)
+
          # All the dictionaries below are used in creating the graph of all
          # the accuracies across all splits (accuraciesPlot())
          # Max
@@ -86,7 +92,9 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                                                         unknownThresholdBuildingData, unknownThresholdBuildingLabels)
 
                  knownCWLabels = trainer.convertLabelToCodeword(codewordColumns, knownLabels)
-                 listOfClassifiers = trainer.trainClassifiers(knownData, knownCWLabels, classifier, knownLabels)
+
+                 listOfClassifiers = trainer.trainClassifiers_Ternary(knownData, knownCWLabels, classifier, knownLabels,
+                                                                      ternarySymbol)
 
                  # Getting predictions on all relevant data:
                  unknownThresholdBuildingPreds, holdoutClassPreds, singleDataSamplesPreds, knownThresholdBuildingPreds = \
@@ -352,6 +360,8 @@ chosenClassifier = int(input())
 classifiers = ["SVM", "DT", "LDA", "KNN", "Logistic Regression", "Neural Network", "Naive Bayes", "Random Forest"]
 print(classifiers[chosenClassifier - 1], "chosen.")
 print("Running...")
-runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
+runAnomalyDetectionTests_Ternary(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
                          dataBeginColumn, dataEndColumn, chosenClassifier,
-                         filePathAccGraph, filePathHDsGraph, ROCPath, buildThresholdHistogramPath, confusionMatrixPath)
+                         filePathAccGraph, filePathHDsGraph, ROCPath, buildThresholdHistogramPath, confusionMatrixPath,
+                                 -1, .5)
+

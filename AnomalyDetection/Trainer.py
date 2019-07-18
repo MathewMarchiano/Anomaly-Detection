@@ -6,6 +6,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
+import numpy as np
+from AnomalyDetection.TernaryOperations import TernaryOperator
 
 class Trainer():
 
@@ -29,7 +31,7 @@ class Trainer():
 
         return allUpdatedLabels
 
-    def trainClassifiers(self, knownData, knownLabels, model):
+    def trainClassifiers(self, knownData, knownLabels, model, originalKnownLabels):
         '''
         Trains classifiers for each bit in a codeword. Each classifier will be used to construct codewords later.
 
@@ -37,6 +39,7 @@ class Trainer():
         :param knownLabels: Known labels (corresponding to the known data) that will be used for training.
         :param model: The numerical representation (if block below) of a particular classifier that will be used for
                       training.
+        :param originalKnownLabels: List of original known labels (only used if neural network is chosen).
         :return: A list of trained classifiers that can then be used for constructing codewords.
         '''
 
@@ -54,7 +57,8 @@ class Trainer():
             elif model == 5:
                 classifier = LogisticRegression(random_state=1)
             elif model == 6:
-                classifier = MLPClassifier(random_state=1, hidden_layer_sizes=(50, ))
+                numKnownClasses = len(np.unique(originalKnownLabels))
+                classifier = MLPClassifier(random_state=1, hidden_layer_sizes=(numKnownClasses, ))
             elif model == 7:
                 classifier = GaussianNB()
             elif model == 8:
@@ -62,6 +66,56 @@ class Trainer():
             else:
                 print("Specify Classifier")
             classifier = classifier.fit(knownData, labels)
+            trainedModels.append(classifier)
+
+        return trainedModels
+
+    def trainClassifiers_Ternary(self, knownData, knownLabels, model, originalKnownLabels, ternarySymbol):
+        '''
+        Trains classifiers for each bit in a codeword. Each classifier will be used to construct codewords later.
+        This differs from the original one because it makes use of the ternary symbol by removing any data/labels that
+        have been marked by it.
+
+        :param knownData: Known data that will be used for training.
+        :param knownLabels: Known labels (corresponding to the known data) that will be used for training.
+        :param model: The numerical representation (if block below) of a particular classifier that will be used for
+                      training.
+        :param originalKnownLabels: List of original known labels (only used if neural network is chosen).
+        :return: A list of trained classifiers that can then be used for constructing codewords.
+        '''
+
+        trainedModels = []
+        TO = TernaryOperator()
+
+        for labels in knownLabels:
+            if model == 1:
+                classifier = svm.SVC(gamma='auto')
+            elif model == 2:
+                classifier = DecisionTreeClassifier(random_state=0)
+            elif model == 3:
+                classifier = LinearDiscriminantAnalysis()
+            elif model == 4:
+                classifier = KNeighborsClassifier(n_neighbors=15)
+            elif model == 5:
+                classifier = LogisticRegression(random_state=1)
+            elif model == 6:
+                numKnownClasses = len(np.unique(originalKnownLabels))
+                classifier = MLPClassifier(random_state=1, hidden_layer_sizes=(numKnownClasses, ))
+            elif model == 7:
+                classifier = GaussianNB()
+            elif model == 8:
+                classifier = RandomForestClassifier(random_state=0)
+            else:
+                print("Specify Classifier")
+
+            # When I don't use copies of the data and labels, it gets all messed up
+            dataCopy = knownData.copy()
+            labelsCopy = labels.copy()
+
+            # Cut the data and labels to make use of the ternary symbol
+            cutKnownData, cutLabels = TO.removeMarkedClasses(dataCopy, labelsCopy, ternarySymbol)
+
+            classifier = classifier.fit(cutKnownData, cutLabels)
             trainedModels.append(classifier)
 
         return trainedModels

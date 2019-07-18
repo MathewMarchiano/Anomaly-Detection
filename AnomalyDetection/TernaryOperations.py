@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import math
 
 # Manages all things that involve use of the ternary symbol
 class TernaryOperator():
@@ -9,9 +10,11 @@ class TernaryOperator():
 
     # First iteration: takes a codebook and randomly selects location(s) to add the ternary symbol
     # for each class
-    def generateTernaryCodebook(self, codebook, ternarySymbol, numTernarySymbols):
+    def generateTernaryCodebook(self, codebook, ternarySymbol, percentTernarySymbols):
         for row in codebook:
-            chosenIndices = random.sample(range(0, len(row)), numTernarySymbols)
+            rowLength = len(row)
+            numTernarySymbols = math.ceil(rowLength * percentTernarySymbols)
+            chosenIndices = random.sample(range(0, rowLength), numTernarySymbols)
             for index in chosenIndices:
                 row[index] = ternarySymbol
 
@@ -39,8 +42,10 @@ class TernaryOperator():
             index += 1
 
         # Delete indices from data and labels. Convert back to list (from np array) afterwards.
-        data = np.delete(data, indicesToDelete).tolist()
-        labels = np.delete(labels, indicesToDelete).tolist()
+        sortedIndicies = sorted(indicesToDelete, reverse=True)
+        for index in sortedIndicies:
+            del data[index]
+            del labels[index]
 
         return data, labels
 
