@@ -6,15 +6,21 @@ import random
 from sklearn.preprocessing.imputation import Imputer
 
 
-# Retrieves and processes the data from a given CSV file or web address. Also deals with relabeling original labels into
-# labels dictated by the classifiers of a given codebook.
 class DatasetHandler():
 
     def __init__(self, codebook):
         self.codebook = codebook
 
-    # Gets data from given dataset.
     def getData(self, dataset, labelsColumn, dataBeginIndex, dataEndIndex):
+        '''
+        Gets data and labels from a given dataset.
+
+        :param dataset: Link or folder path to the dataset you want to use.
+        :param labelsColumn: The column (i.e. in the CSV file) containing the labels.
+        :param dataBeginIndex: Where the data begins (if data in first column -> index = 0).
+        :param dataEndIndex: Where the data ends.
+        :return: List of the data of the dataset and list of the corresponding labels.
+        '''
         importedDataset = pd.read_csv(dataset, header=None)
         numColumns = len(importedDataset.columns)
         dataValues = genfromtxt(dataset, delimiter = ',', usecols = range(dataBeginIndex, dataEndIndex)).tolist()
@@ -27,8 +33,14 @@ class DatasetHandler():
 
         return dataValues, labels
 
-    # Preprocesses the data.
+
     def preprocessData(self, data):
+        '''
+        Handle missing values and scale the data (scaling necessary for SVM to function well).
+
+        :param data: All of the original data.
+        :return: Data that has been processed.
+        '''
         imputer = Imputer(missing_values = np.nan, strategy = 'mean')
         imputer.fit(data)
         imputedData = imputer.transform(data) #nan values will take on mean
@@ -37,6 +49,12 @@ class DatasetHandler():
         return scaledData
 
     def assignCodeword(self, labels):
+        '''
+        Assigns a codeword from the desginated codebook to the labels of the dataset.
+
+        :param labels: The labels of the dataset.
+        :return: List of labels that are now codewords and a dictionary with key = original label and value = codeword
+        '''
         labelDictionary = {}
         updatedLabels = []
         random.shuffle(self.codebook)  # In order to randomize assignment of codewords.
@@ -52,11 +70,18 @@ class DatasetHandler():
 
         return updatedLabels, labelDictionary
 
-    # Binarize labels based off of the assigned codeword for each class.
-    # Needed for training later.
-    # I'm pretty sure this handles creating the binary columns that are passed
-    # (each one) to a unique classifier for training.
     def binarizeLabels(self, labelDictionary):
+        '''
+        Binarize labels based off of the assigned codeword for each class.
+        For training, we need to pass a list of "updated labels" (with the only options being 0 or 1). Whether or not an
+        original label is determined to be a 0 or 1 is based off of the columns of the codebook. This method goes down
+        each column of the codebook, and creates a list of what the original label should be for a particular column
+        of a codebook.
+
+        :param labelDictionary: The dictionary that cotains the original label and its bit representation.
+        :return: A list of lists with each nested list containing the binarized labels for a particular column in the
+                 codebook.
+        '''
         updatedLabelsList = []
         classifierList = []
         for label in labelDictionary:
@@ -97,6 +122,15 @@ class DatasetHandler():
         return classifierDictionaryList
 
     def getSmallClasses(self, data, labels):
+        '''
+        Goes through a dataset and flags all the indices of classes that have a small number of samples.
+
+        :param data: All original data.
+        :param labels: All original labels.
+        :return: The indices that need to be removed in order to ignore small classes. Additionally, it returns lists
+                 containing that data and their corresponding labels (in case you ever want to use it for some reason or
+                validate that you're actually retrieving the correct samples).
+        '''
         uniqueLabels = np.unique(labels)
         labelsToRemove = []
         dataToRemove = []
@@ -118,6 +152,15 @@ class DatasetHandler():
         return indicesToRemove, dataToRemove, labelsToRemove
 
     def removeSmallClasses(self, data, labels, indicesToRemove):
+        '''
+        Use the list of indices to remove generated from the 'getSmallClasses()' method to create an updated list of
+        data and labels that no longer contain these small classes.
+
+        :param data: All original data.
+        :param labels: All original labels.
+        :param indicesToRemove: Indices that correspond to the positions of classes that have a small number of samples.
+        :return: A list for data and labels that don't contain the small classes.
+        '''
         sortedIndicies = sorted(indicesToRemove, reverse=True)
         for index in sortedIndicies:
             del labels[index]
@@ -126,6 +169,14 @@ class DatasetHandler():
         return data, labels
 
     def getHoldoutIndices(self, labels, labelsToRemove):
+        '''
+        Determine the indices of labels that need to be used as the holdout (used to ensure that we don't use a class that
+        has been marked as small and therefore removed).
+
+        :param labels: All original labels
+        :param labelsToRemove: Labels that will be removed.
+        :return: A list of indices that correspond to the position of classes/labels that will then be used as a holdout.
+        '''
         uniqueLabels = np.unique(labels)
         uniqueLabelsToRemove = np.unique(labelsToRemove)
         index = 0

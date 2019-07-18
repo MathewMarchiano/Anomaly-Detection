@@ -162,7 +162,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
 
              # Confusion matrix
              vis.generateConfusionMatrix(predictions, actuals, codebook, confusionMatrixPath, classifier, codebookNum,
-                                         codebook, split)
+                                         split)
 
              printResults(unknownAccuracies, knownAccuracies, optimalThresholds, codebookNum, split)
 
@@ -171,6 +171,7 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
              thresholdVarDictionary[split] = np.var((optimalThresholds))
              thresholdMeanDictionary[split] = np.mean(optimalThresholds)
 
+             # Used for creating accuracies graph at the end ('accuraciesPlot()')
              knownMaxAccDictionary[split] = max(knownAccuracies)
              knownMinAccDictionay[split] = min(knownAccuracies)
              knownVarDictionary[split] = np.var(knownAccuracies)
@@ -275,6 +276,7 @@ def getMinimumHammingDistanceLists(trainer, codebook, unknownThresholdBuildingPr
 
 # Parses a text file containing all of the information necessary to run "runAnomalyDetectionTests" in order to
 # retrieve all necessary variables. The only detail it doesn't include is the desired classifier to train with.
+# ***********THIS WILL NEED TO BE UPDATED EVERY TIME A NEW PARAMETER IS ADDED TO THE PARAMETER VALUE FILES**************
 def parseDatasetInfoFile(textFile):
     parameterValues = []
     with open(textFile, "rt") as myfile:

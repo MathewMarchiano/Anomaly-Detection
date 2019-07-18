@@ -12,9 +12,14 @@ class Trainer():
     def __init__(self):
         pass
 
-    # Use label dictionaries of "binarized" classes to convert all original labels to 0's and 1's based off of what they
-    # were assigned bya given classifier (column in codebook).
     def convertLabelToCodeword(self, labelDictionaries, labels):
+        '''
+        Converts "original" labels to codewords.
+
+        :param labelDictionaries: Dictionary containing the original label (key) and its corresponding binary label (value)
+        :param labels: Original labels that you want to convert to a codeword.
+        :return: List of the codeword representation of a list of original labels.
+        '''
         allUpdatedLabels = []
         for dictionary in labelDictionaries:
             tempLabelList = []
@@ -24,8 +29,17 @@ class Trainer():
 
         return allUpdatedLabels
 
-    # Return models so that predictions can be done later.
     def trainClassifiers(self, knownData, knownLabels, model):
+        '''
+        Trains classifiers for each bit in a codeword. Each classifier will be used to construct codewords later.
+
+        :param knownData: Known data that will be used for training.
+        :param knownLabels: Known labels (corresponding to the known data) that will be used for training.
+        :param model: The numerical representation (if block below) of a particular classifier that will be used for
+                      training.
+        :return: A list of trained classifiers that can then be used for constructing codewords.
+        '''
+
         trainedModels = []
 
         for labels in knownLabels:
@@ -40,7 +54,7 @@ class Trainer():
             elif model == 5:
                 classifier = LogisticRegression(random_state=1)
             elif model == 6:
-                classifier = MLPClassifier(random_state=1)
+                classifier = MLPClassifier(random_state=1, hidden_layer_sizes=(50, ))
             elif model == 7:
                 classifier = GaussianNB()
             elif model == 8:
@@ -52,14 +66,31 @@ class Trainer():
 
         return trainedModels
 
-    # Converts list containing multiple numpy arrays to list of lists containing codewords.
-    def toCodeword(self, list):
+    def toCodeword(self, listOfRawPredictions):
+        '''
+        This method constructs codewords from a list containing lists of predictions for each bit/index for a predicted
+        codeword.
+
+        BACKGROUND: In the 'getPredictions()' method, each classifier's predictions of 1 or 0 for a particular bit in
+        a codeword is recorded in a numpy array. Because this list contains all bits belonging to a particular
+        bit/index (i.e. first bit, second bit, etc.) for all bits of every predicted codeword, we cannot simply take
+        the output from the 'getPredictions()' method -- we construct the predicted codeword using this method
+
+        A more 'visual' explanation:
+        listOfRawPredictions: [[all bits for index 0], [all bits for index 1], ... [all bits for index n]]
+        where m = number of bits  in codeword and n = number of predictions made by the classifiers
+        codeword_1 = [list[0][0], list[1][0], ... list[m - 1][0]].
+        codeword_n = [list[0][n - 1], list[1][n - 1], ... list[m - 1][n - 1]].
+
+        :param listOfRawPredictions: List of predictions for each bit in each codeword.
+        :return: List of all predicted codewords.
+        '''
         codeWordList = []
         tempList = []
         counter = 0
 
-        while counter < len(list[0]):
-            for prediction in list:
+        while counter < len(listOfRawPredictions[0]):
+            for prediction in listOfRawPredictions:
                 tempList.append(prediction[counter])
             codeWordList.append(tempList)
             tempList = []
@@ -67,8 +98,14 @@ class Trainer():
 
         return codeWordList
 
-    # Used trained classifiers to get predictions. Predictions will construct codewords.
     def getPredictions(self, validationData, trainedClassifiers):
+        '''
+        Generate codeword predictions based off of data given to the list of classifiers.
+
+        :param validationData: Data to generate predictions on.
+        :param trainedClassifiers: List of trained classifiers.
+        :return: List of predictions (in the form of codewords).
+        '''
         predictionList = []
 
         for classifier in trainedClassifiers:
@@ -79,11 +116,19 @@ class Trainer():
 
         return predictionList
 
-    # Takes codewords (usually predicted codewords) and "updates" them to whatever codeword they are
-    # closest to (with respect to hamming distance) in a given codebook. Will also return a list that
-    # shows what the minimum hamming distances were when deciding which codeword to updated the predicted
-    # codeword with.
     def hammingDistanceUpdater(self, codebook, predictedCodewords, threshold):
+        '''
+        Takes codewords (usually predicted codewords) and "updates" them to whatever codeword they are
+        closest to (with respect to hamming distance) in a given codebook. Will also return a list that
+        shows what the minimum hamming distances were when deciding which codeword to updated the predicted
+        codeword with.
+
+        :param codebook: Codebook being used to relabel original labels of the dataset.
+        :param predictedCodewords: List of predictions made by the list of classifiers.
+        :param threshold: Threshold that was used to distinguish between known and unknown data (used to "update" data
+                          that is unknown to a list of a -1's).
+        :return: List of all "updated"/"autocorrected" codewords.
+        '''
         minHamWord = [] # List because codewords are represented as binary lists
         unknownPrediction = []
         # Predictions labeled as unknown will have a codeword with -1 for all of its indices.
@@ -112,10 +157,16 @@ class Trainer():
 
         return updatedCodewordList
 
-    # Sole purpose is to get the minimum Hamming distance for a predicted codeword
-    # Different than hammingDistanceUpdater() because sometimes we aren't going to want the
-    # actual codeword (in the codebook) that corresponds to the shortest HD.
     def getMinimumHammingDistance(self, codebook, predictedCodeword):
+        '''
+        Sole purpose is to get the minimum Hamming distance for a predicted codeword
+        Different than hammingDistanceUpdater() because sometimes we aren't going to want the
+        actual codeword (in the codebook) that corresponds to the shortest HD.\
+
+        :param codebook: Codebook being used to relabel original labels of the dataset.
+        :param predictedCodeword: Predicted codewords from the list of trained classifiers.
+        :return: List of minimum Hamming distances.
+        '''
         minHam = len(predictedCodeword)
         # Checking all actual codewords to find the one that has the shortest HD
         # to the predicted codeword
@@ -128,9 +179,15 @@ class Trainer():
                 minHam = hammingDistance
         return minHam
 
-    # Gets accuracy of predicted codewords when compared to
-    # actual (i.e. validation) codewords
     def compare(self, predictions, actual):
+        '''
+        Gets accuracy of predicted codewords when compared to
+        actual (i.e. validation) codewords
+
+        :param predictions: Updated/autocorrected codewords from the list of classifiers.
+        :param actual: List of codewords of what that prediction should've been for a particular sample of data.
+        :return: Percent of predictions that were correct.
+        '''
         total = len(predictions)
         right = 0
 

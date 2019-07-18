@@ -7,9 +7,14 @@ class Splitter():
     def __init__(self):
         pass
 
-    # Utility method used in splitDataAndLabels to handle splitting of the known data.
-    # Known data is used for training. Validation used for threshold.
     def knownDataSplit(self, knownData, knownLabels):
+        '''
+        Utility method used in splitDataAndLabels to handle splitting of the known data.
+
+        :param knownData: Data marked as known.
+        :param knownLabels: Labels marked as known.
+        :return: All the different splits of the known data and their corresponding labels.
+        '''
         HOLDOUT_AMOUNT = .20
         knownThresholdData = []
         knownThresholdLabels = []
@@ -78,8 +83,19 @@ class Splitter():
         return knownThresholdData, knownThresholdLabels, singleDataSamples, \
                singleDataSamplesLabels, knownData, knownLabels
 
-    # Determines whether a label will be known, unknown, or holdout.
     def assignLabel(self, trimmedLabels, allLabels, percentUnknown, holdoutIndex):
+        '''
+        Determines whether a label will be known, unknown, or holdout.
+
+        :param trimmedLabels: List of all the labels belonging to classes that have >3 samples of data.
+        :param allLabels: Untrimmed list of labels (contains labels belonging to classes deemed 'small').
+        :param percentUnknown: Percentage of the classes to be marked as unknown. NOTE: This is percent of classes NOT
+                               percent of number of total samples.
+        :param holdoutIndex: Index that will be used to select a holdout class.
+        :return: Lists of labels (unique) that will be used for splitting the "whole" data/labels into known, unknown,
+                 and holdout lists necessary for training and validating.
+        '''
+
         uniqueTrimmedLabels = np.unique(trimmedLabels).tolist()
         uniqueLabels = np.unique(allLabels).tolist()
         numUnknown = int(len(uniqueTrimmedLabels) * percentUnknown) # Casting to int because whole numbers are required.
@@ -88,9 +104,9 @@ class Splitter():
         if numUnknown == 0:
             numUnknown = 1
 
-        #Remove holdout class from selection of labels.
+        # Remove holdout class from selection of labels.
         # We select from the unique labels that haven't been trimmed yet because the indices that have been
-        # chosen to be holdouts correspond to the list of all unique labels.
+        # chosen to be holdouts correspond to the indices of the list of all unique labels.
         holdoutClass = uniqueLabels[holdoutIndex]
         # Remove the chosen holdout from the list of trimmed labels so that the holdout cannot be chosen as a known or
         # unknown class.
@@ -107,38 +123,17 @@ class Splitter():
 
         return listOfUnknownClasses, listOfKnownClasses, holdoutClass
 
-    # Determines whether a label will be known, unknown, or holdout.
-    def assignLabel_TernarySymbol(self, trimmedLabels, allLabels, percentUnknown, holdoutIndex):
-        uniqueTrimmedLabels = np.unique(trimmedLabels).tolist()
-        uniqueLabels = np.unique(allLabels).tolist()
-        numUnknown = int(len(uniqueTrimmedLabels) * percentUnknown) # Casting to int because whole numbers are required.
+    def splitDataAndLabels(self, data, allOrigTrimmedLabels, unknownClasses, holdoutClass):
+        '''
+        Splits the data and labels into separate lists of holdout, known, or unknown.
+        Will also deal with splitting of the known data through use of knownDataSplit().
 
-        # Ensure that at least one class is being used as a holdout
-        if numUnknown == 0:
-            numUnknown = 1
-
-        #Remove holdout class from selection of labels.
-        # We select from the unique labels that haven't been trimmed yet because the indices that have been
-        # chosen to be holdouts correspond to the list of all unique labels.
-        holdoutClass = uniqueLabels[holdoutIndex]
-        # Remove the chosen holdout from the list of trimmed labels so that the holdout cannot be chosen as a known or
-        # unknown class.
-        uniqueTrimmedLabels.remove(holdoutClass)
-        # Randomly select which classes will be unknown.
-        # We use the trimmed set of labels now becausae we only want to use classes that have enough
-        # samples of data.
-        listOfUnknownClasses = random.sample(uniqueTrimmedLabels, numUnknown)
-        #Create list of what the known classes will be.
-        listOfKnownClasses = []
-        for label in uniqueTrimmedLabels:
-            if label not in listOfUnknownClasses:
-                listOfKnownClasses.append(label)
-
-        return listOfUnknownClasses, listOfKnownClasses, holdoutClass
-
-    # Splits the data and labels into separate lists of holdout, known, or unknown.
-    # Will also deal with splitting of the known data through use of knownDataSplit().
-    def splitDataAndLabels(self, data, allOrigLabels, unknownClasses, holdoutClass):
+        :param data: All original data.
+        :param allOrigTrimmedLabels: All the labels of valid classes (those that have >3 samples of data).
+        :param unknownClasses: List of classes marked as unknown.
+        :param holdoutClass: Classes marked as holdout.
+        :return: Lists containing data and labels for all necessary splits.
+        '''
         holdoutData = []
         holdoutLabels = []
         unknownData = []
@@ -146,18 +141,18 @@ class Splitter():
         indicesToDelete = []
         #Separate holdout data from all data
         for index in range(0, len(data)):
-            if allOrigLabels[index] == holdoutClass:
+            if allOrigTrimmedLabels[index] == holdoutClass:
                 holdoutData.append(data[index])
-                holdoutLabels.append(allOrigLabels[index])
+                holdoutLabels.append(allOrigTrimmedLabels[index])
                 indicesToDelete.append(index)
 
 
         #Separate unknown data from all data. What is left will be the known data and labels
         #in both data and allOriginalLabels variables.
         for index in range(0, len(data)):
-            if allOrigLabels[index] in unknownClasses:
+            if allOrigTrimmedLabels[index] in unknownClasses:
                 unknownData.append(data[index])
-                unknownLabels.append(allOrigLabels[index])
+                unknownLabels.append(allOrigTrimmedLabels[index])
                 indicesToDelete.append(index)
 
         #Delete all indices that were in holdout or unknown.
@@ -167,20 +162,29 @@ class Splitter():
         sortedIndicies = sorted(indicesToDelete, reverse = True)
         for index in sortedIndicies:
             del data[index]
-            del allOrigLabels[index]
+            del allOrigTrimmedLabels[index]
 
         #Separate known data
         knownValidationData, knownValidationLabels, singleDataSamples, \
-        singleDataSamplesLabels, knownData, knownLabels = self.knownDataSplit(data, allOrigLabels)
+        singleDataSamplesLabels, knownData, knownLabels = self.knownDataSplit(data, allOrigTrimmedLabels)
 
         return knownValidationData, knownValidationLabels, singleDataSamples, singleDataSamplesLabels, knownData, \
                knownLabels, unknownData, unknownLabels, holdoutData, holdoutLabels
 
-    # Used to reduce a certain split's (known or unknown split, specifically) number of samples used to build
-    # the threshold.
-    # This particular version of reduceThresholdBuildingSamples is labeled "AllClasses" because it will randomly select
-    # from all samples from all classes of the "largerSplitDataSamples/Labels" variables.
     def reduceThresholdBuildingSamples_AllClasses(self, smallerSplitDataSamples, largerSplitDataSamples, largerSplitLabels):
+        '''
+        Used to reduce a certain split's (known or unknown split, specifically) number of samples used to build
+        the threshold.
+        This particular version of reduceThresholdBuildingSamples is labeled "AllClasses" because it will randomly
+          select
+        from all samples from all classes of the "largerSplitDataSamples/Labels" variables.
+
+        :param smallerSplitDataSamples: Smaller split's data.
+        :param largerSplitDataSamples: Larger split's data
+        :param largerSplitLabels:  Larger split's labels.
+        :return: Abbreviated list of data and labels of the larger split's data and labels.
+        '''
+
         reducedThresholdBuildingData = [] # The shortened list of data samples which will be used to build threshold.
         reducedThresholdBuildingLabels = [] # Same as above, except labels instead of data.
         numSmallerSplitDataSamples = len(smallerSplitDataSamples)
@@ -197,13 +201,20 @@ class Splitter():
 
         return reducedThresholdBuildingData, reducedThresholdBuildingLabels
 
-    # Used to reduce a certain split's (known or unknown split, specifically) number of samples used to build
-    # the threshold (same use as above -- different approach).
-    # This particular version of reduceThresholdBuildingSamples is labeled "FewestClasses" because it will randomly select
-    # from one class until there is enough samples to match the smaller split of samples. If that particular class does
-    # not contain enough samples of data, it will randomly select another class to begin choosing samples from. This
-    # ensures that the minimum amount of classes are used when building the threshold building samples.
     def reduceThresholdBuildingSamples_FewestClasses(self, smallerSplitDataSamples, largerSplitDataSamples, largerSplitLabels):
+        '''
+        Used to reduce a certain split's (known or unknown split, specifically) number of samples used to build
+        the threshold (same use as above -- different approach).
+        This particular version of reduceThresholdBuildingSamples is labeled "FewestClasses" because it will randomly select
+        from one class until there is enough samples to match the smaller split of samples. If that particular class does
+        not contain enough samples of data, it will randomly select another class to begin choosing samples from. This
+        ensures that the minimum amount of classes are used when building the threshold building samples.
+
+        :param smallerSplitDataSamples: Smaller split's data.
+        :param largerSplitDataSamples:  Larger split's data.
+        :param largerSplitLabels:  Larger split's labels.
+        :return: Abbreviated list of data and labels of the larger split's data and labels.
+        '''
         reducedThresholdBuildingData = [] # The shortened list of data samples which will be used to build threshold.
         reducedThresholdBuildingLabels = [] # Same as above, except labels instead of data.
         numSmallerSplitDataSamples = len(smallerSplitDataSamples)
