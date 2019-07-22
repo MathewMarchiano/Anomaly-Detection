@@ -6,12 +6,12 @@ import numpy as np
 
 pred = Predictor()
 dm = DataManager()
-models = ["SVM", "DT", "LDA", "KNN", "RandomForest"]
-dataset = "D:\ECOC\DownloadedDatasets\Robert.csv"
+models = ["SVM", "DT", "LDA", "KNN", "Logistic Regression", "Neural Network", "Naive Bayes", "Random Forest"]
+dataset = "D:\ECOC\DownloadedDatasets\Fashion.csv"
 
-for i in range(1,6):
+for i in range(1,9):
     for runs in range(1):
-        X, y = dm.getData(1, 1, 7200, dataset)
+        X, y = dm.getData(-1, 0, 783, dataset)
         indicesToRemove, dataToRemove, labelsToRemove = dm.getSmallClasses(X, y)
         X, y = dm.removeSmallClasses(X, y, indicesToRemove)
         X = dm.preprocessData(X)

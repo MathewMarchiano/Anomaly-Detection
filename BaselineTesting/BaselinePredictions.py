@@ -1,13 +1,16 @@
-import numpy as np
 from numpy import genfromtxt
+from sklearn.preprocessing.imputation import Imputer
+from sklearn import preprocessing
+import pandas as pd
 from sklearn import svm
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing.imputation import Imputer
-from sklearn import preprocessing
-import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
+from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
+import numpy as np
 
 
 class Predictor():
@@ -22,9 +25,17 @@ class Predictor():
         elif model == 3:
             classifier = LinearDiscriminantAnalysis()
         elif model == 4:
-            classifier = KNeighborsClassifier(n_neighbors=2)
+            classifier = KNeighborsClassifier(n_neighbors=15)
         elif model == 5:
-            classifier = RandomForestClassifier(n_estimators=100, max_depth=2)
+            classifier = LogisticRegression(random_state=1)
+        elif model == 6:
+            numKnownClasses = len(np.unique(labels))
+            print("Number of Nodes:", numKnownClasses)
+            classifier = MLPClassifier(random_state=1, hidden_layer_sizes=(numKnownClasses,))
+        elif model == 7:
+            classifier = GaussianNB()
+        elif model == 8:
+            classifier = RandomForestClassifier(random_state=0)
         else:
             print("Specify Classifier")
         classifier = classifier.fit(data, labels)
