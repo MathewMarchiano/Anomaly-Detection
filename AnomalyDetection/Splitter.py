@@ -7,6 +7,37 @@ class Splitter():
     def __init__(self):
         pass
 
+    def holdoutClassSplit(self, holdoutData, holdoutLabels):
+        '''
+        Splits the holdout class's data so that we can test creating a codeword for an unknown class
+        and then see if we can incorporate that new codeword/class into our model effectively (i.e.
+        be able to accurately predict that class in the future).
+
+        :param holdoutData: All the data belonging to the holdout class.
+        :param holdoutLabels: All of the labels belonging to the holdout class.
+        :return: "First run through" and test lists of the holdout class.
+        '''
+        testData = []
+        testLabels = []
+        numDataSamples = len(holdoutData)
+        numTestSamples = math.ceil(numDataSamples*.80)
+        chosenIndices = random.sample(range(0, numDataSamples), numTestSamples)
+
+        for i in chosenIndices:
+            testData.append(holdoutData[i])
+            testLabels.append(holdoutLabels[i])
+
+        sortedIndicies = sorted(chosenIndices, reverse=True)
+        for index in sortedIndicies:
+            del holdoutData[index]
+            del holdoutLabels[index]
+
+        return testData, testLabels, holdoutData, holdoutLabels
+
+
+
+
+
     def knownDataSplit(self, knownData, knownLabels):
         '''
         Utility method used in splitDataAndLabels to handle splitting of the known data.
