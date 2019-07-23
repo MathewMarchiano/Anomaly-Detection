@@ -11,3 +11,4 @@ D:\ECOC\HammingDistanceHistograms\OlivettiFaces\Hadamard
 4095
 D:\ECOC\ROCFigures\OlivettiFaces\Hadamard
 D:\ECOC\BuildingThresholdHistograms\OlivettiFaces\Hadamard
+D:\ECOC\ConfusionMatrixFigures\OlivettiFaces\Hadamard
