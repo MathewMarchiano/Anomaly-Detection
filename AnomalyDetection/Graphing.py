@@ -1,7 +1,9 @@
 import numpy as np
 import seaborn as sn
 from matplotlib import pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
+# Contains methods for making graphs for anomaly detection (general).
 class Visuals():
 
     def graphThresholdTestHistogram(self, knownHDs, unknownHDs, threshold,
@@ -336,5 +338,81 @@ class Visuals():
             codebookNum) + "_CWLength(" + str(
             len(codebook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
         plt.savefig(saveInfo, dpi=100)
+        plt.show()
+        plt.clf()
+
+# Contains methods that will probably only be used when working with incremental
+# learning
+class IncrementalLearningVisuals():
+
+    def __init__(self):
+        pass
+
+    def graphCodewordFrequency(self, listOfCodewords):
+        '''
+        Graphs the frequency of each codeword given in the list of codewords provided.
+
+        This method is used for visualizing the number and frequency of codewords generated for
+        data that the list of trained classifiers have never seen before.
+
+        :param listOfCodewords: List of codewords generated using unknown/holdout data.
+        :return: A histogram displaying the frequency of each codeword.
+        '''
+        #Convert list of lists (codewords) to list of strings
+        stringCodewords = []
+        for word in listOfCodewords:
+            word = [str(bit) for bit in word]
+            stringWord = ''.join(word)
+            stringCodewords.append(stringWord)
+
+        ax = plt.subplot(111)
+        ax.hist(stringCodewords, ec='black')
+
+        ax.set_xlabel("Codeword")
+        ax.set_ylabel("Frequency")
+        ax.set_title("Codeword Frequency")
+
+        plt.show()
+        plt.clf()
+
+    def graphBitFrequency(self, listOfCodewords):
+        '''
+        Will create a histogram showing the frequency of 0's and 1's for each bit across multiple codewords.
+
+        :param listOfCodewords: List of codewords generated using unknown/holdout data.
+        :return: A histogram showing the frequency 0's and 1's for each index in a codeword
+        '''
+        ax = plt.subplot(111)
+        numBits = len(listOfCodewords[0])
+        barWidth = 0.20
+
+        # Get lists containing frequencies of 1's and 0's in each index
+        onesList = [0] * numBits
+        zeroesList = [0] * numBits
+
+        for codeword in listOfCodewords:
+            index = 0
+            for bit in codeword:
+                if bit == 1:
+                    onesList[index] += 1
+                else:
+                    zeroesList[index] += 1
+                index += 1
+
+        index = np.arange(numBits)
+        ax.bar(index, zeroesList, barWidth, color='purple', label="0's")
+        ax.bar(index + barWidth, onesList, barWidth, color='g', label="1's")
+        ax.set_xticks(range(numBits))
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.set_xlabel("Bit Position")
+        ax.set_ylabel("Frequency")
+
+        # Setting up the legend
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        handles, labels = ax.get_legend_handles_labels()
+        # For the line below, bbox_to_anchor manages where the legend will be located
+        lgd = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
+
         plt.show()
         plt.clf()
