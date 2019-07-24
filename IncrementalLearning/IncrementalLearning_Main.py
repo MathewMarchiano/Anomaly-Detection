@@ -3,7 +3,7 @@ from AnomalyDetection.ThresholdManagement import ThresholdManager
 from AnomalyDetection.Graphing import Visuals
 from AnomalyDetection.Splitter import Splitter
 from AnomalyDetection.Trainer import Trainer
-from AnomalyDetection.IncrementalLearning import IncrementalLearning
+from IncrementalLearning.IncrementalLearningFunctions import IncrementalLearningFunctions
 import numpy as np
 import ast
 
@@ -27,8 +27,8 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
      splitter = Splitter()
      trainer = Trainer()
      tm = ThresholdManager()
-     vis = Visuals()
-     IL = IncrementalLearning()
+     IL = IncrementalLearningFunctions()
+     # vis = Visuals()
 
      for codebook in listOfCBs:
          # All the dictionaries below are used in creating the graph of all
@@ -138,9 +138,11 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  testData, testLabels, holdoutData, holdoutLabels = \
                      splitter.holdoutClassSplit(holdoutData, holdoutLabels)
 
-                 finalCodeword = IL.generateCodeword_Mode(listOfClassifiers, holdoutData)
+                 listOfPotentialCodewords = trainer.getPredictions(holdoutData, listOfClassifiers)
+
+                 finalCodeword = IL.generateCodeword_Averaged(listOfPotentialCodewords)
                  print("Accuracy:", IL.testGeneratedCodeword(codebook, listOfClassifiers, finalCodeword, testData,
-                                                                                            optimalThreshold))
+                                                                                            1000))
 
                  iterationCount += 1
 
