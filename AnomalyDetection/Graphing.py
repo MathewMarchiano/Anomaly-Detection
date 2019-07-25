@@ -2,6 +2,7 @@ import numpy as np
 import seaborn as sn
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
+from collections import Counter
 
 # Contains methods for making graphs for anomaly detection (general).
 class Visuals():
@@ -295,7 +296,7 @@ class Visuals():
                 # be graphed at
                 if prediction in codebook:
                     rowNumber = codebook.index(actual)
-                    columnNumber = codebook.index( prediction)
+                    columnNumber = codebook.index(prediction)
                     confusionMatrix[rowNumber][columnNumber] += 1
                 # Otherwise, the prediction is unknown
                 else:
@@ -310,9 +311,9 @@ class Visuals():
         ax.set_ylabel('True Values')
         ax.set_title('Confusion Matrix')
         models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest"]
-        saveInfo = saveFolderPath + "\\" + "_Original_" + models[selectedModel - 1] + "_CB" + str(codebookNum) + "_CWLength(" + str(
-            len(codebook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
-        plt.savefig(saveInfo, dpi=100)
+        # saveInfo = saveFolderPath + "\\" + "_Original_" + models[selectedModel - 1] + "_CB" + str(codebookNum) + "_CWLength(" + str(
+        #     len(codebook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
+        # plt.savefig(saveInfo, dpi=100)
         plt.show()
         plt.clf()
 
@@ -334,10 +335,10 @@ class Visuals():
         ax.set_ylabel('True Values')
         ax.set_title('Confusion Matrix')
         models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest"]
-        saveInfo = saveFolderPath + "\\" + "_Averaged_" + models[selectedModel - 1] + "_CB" + str(
-            codebookNum) + "_CWLength(" + str(
-            len(codebook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
-        plt.savefig(saveInfo, dpi=100)
+        # saveInfo = saveFolderPath + "\\" + "_Averaged_" + models[selectedModel - 1] + "_CB" + str(
+        #     codebookNum) + "_CWLength(" + str(
+        #     len(codebook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
+        # plt.savefig(saveInfo, dpi=100)
         plt.show()
         plt.clf()
 
@@ -365,17 +366,53 @@ class IncrementalLearningVisuals():
             stringWord = ''.join(word)
             stringCodewords.append(stringWord)
 
+        c = Counter(stringCodewords) # Used for making bar graph
         ax = plt.subplot(111)
-        ax.hist(stringCodewords, ec='black')
+        ax.bar(c.keys(), c.values(), ec='black')
+        plt.setp(ax.get_xticklabels(), rotation=80, horizontalalignment='right', fontsize=6)
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
         ax.set_xlabel("Codeword")
         ax.set_ylabel("Frequency")
         ax.set_title("Codeword Frequency")
-
         plt.show()
         plt.clf()
 
-    def graphBitFrequency(self, listOfCodewords):
+    def graphCodewordFrequency_TopFive(self, listOfCodewords):
+        '''
+        Graphs the frequency of the 5 most frequent codewords given in the list of codewords provided.
+
+        This method is used for visualizing the number and frequency of codewords generated for
+        data that the list of trained classifiers have never seen before.
+
+        :param listOfCodewords: List of codewords generated using unknown/holdout data.
+        :return: A histogram displaying the frequency of each codeword.
+        '''
+        #Convert list of lists (codewords) to list of strings
+        stringCodewords = []
+        for word in listOfCodewords:
+            word = [str(bit) for bit in word]
+            stringWord = ''.join(word)
+            stringCodewords.append(stringWord)
+
+        c = Counter(stringCodewords) # Used for making bar graph
+        mostCommon = c.most_common(5)
+
+        x_val = [x[0] for x in mostCommon]
+        y_val = [x[1] for x in mostCommon]
+
+        ax = plt.subplot(111)
+        ax.bar(x_val, y_val, ec='black')
+        plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right', fontsize=15)
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+
+        ax.set_xlabel("Codeword")
+        ax.set_ylabel("Frequency")
+        ax.set_title("Top Five Most Frequent Codewords")
+        plt.show()
+        plt.clf()
+
+    def graphBitFrequency(self, listOfCodewords, accuracy):
         '''
         Will create a histogram showing the frequency of 0's and 1's for each bit across multiple codewords.
 
@@ -404,8 +441,11 @@ class IncrementalLearningVisuals():
         ax.bar(index + barWidth, onesList, barWidth, color='g', label="1's")
         ax.set_xticks(range(numBits))
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.set_xlabel("Bit Position")
+        ax.set_xlabel("Codeword Index")
         ax.set_ylabel("Frequency")
+
+        title = "Index Bit Frequency\nAccuracy: " + str(round(accuracy, 2))
+        ax.set_title(title)
 
         # Setting up the legend
         box = ax.get_position()
