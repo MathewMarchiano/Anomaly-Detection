@@ -53,7 +53,7 @@ class Trainer():
             elif model == 3:
                 classifier = LinearDiscriminantAnalysis()
             elif model == 4:
-                classifier = KNeighborsClassifier(n_neighbors=15)
+                classifier = KNeighborsClassifier()
             elif model == 5:
                 classifier = LogisticRegression(random_state=1)
             elif model == 6:
@@ -236,7 +236,7 @@ class Trainer():
     def compare(self, predictions, actual):
         '''
         Gets accuracy of predicted codewords when compared to
-        actual (i.e. validation) codewords
+        actual codewords
 
         :param predictions: Updated/autocorrected codewords from the list of classifiers.
         :param actual: List of codewords of what that prediction should've been for a particular sample of data.
