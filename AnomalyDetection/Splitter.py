@@ -34,10 +34,6 @@ class Splitter():
 
         return testData, testLabels, holdoutData, holdoutLabels
 
-
-
-
-
     def knownDataSplit(self, knownData, knownLabels):
         '''
         Utility method used in splitDataAndLabels to handle splitting of the known data.

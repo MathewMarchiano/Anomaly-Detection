@@ -3,6 +3,8 @@ import seaborn as sn
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from collections import Counter
+import itertools
+import operator
 
 # Contains methods for making graphs for anomaly detection (general).
 class Visuals():
@@ -223,10 +225,20 @@ class Visuals():
         plt.show()
         plt.clf()
 
+    # USED FOR graphROC. Utilizes the trapezoid rule to approximate AUC.
+    def auc_from_fpr_tpr(self, fpr, tpr, trapezoid=False):
+        fpr.sort()
+        tpr.sort()
+        area = 0
+        ft = list(zip(fpr, tpr))
+        for p0, p1 in zip(ft[: -1], ft[1:]):
+            area += (p1[0] - p0[0]) * ((p1[1] + p0[1]) / 2 if trapezoid else p0[1])
+        return area
+
     def graphROC(self, unknownAccs, knownAccs, split, codeBook, saveFolderPath, selectedModel, bestKnownAcc,
                  bestUnknownAcc, averagedOptimalThreshold, codebookNum):
         '''
-        Creates an ROC graph. knownAccs used for true positive rate. unknownAccs used for false positive rate.
+        Creates an ROC graph. unknownAccs used for true positive rate. knownAccs used for false positive rate.
         besteknownAccs is used to graph the point on the ROC that corresponds to the accuracy of the threshold
         that was determined to be most optimal.
 
@@ -247,8 +259,10 @@ class Visuals():
         # False Positive Rate is = 1 - specificity
         for acc in knownAccs:
             fprList.append(1 - acc)
+        AUC = self.auc_from_fpr_tpr(fprList, unknownAccs)
+        titleString = "ROC\nAUC="+ str(round(AUC, 2))
         ax = plt.subplot(111)
-        ax.set_title("ROC")
+        ax.set_title(titleString)
         ax.set_xlabel("False Positive Rate")
         ax.set_ylabel("True Positive Rate")
         ax.plot([0,1],[0,1], 'k--')
@@ -256,6 +270,9 @@ class Visuals():
         ax.plot(fprList, unknownAccs, linewidth=2, label=None)
         roundedAvgOptimalThreshold = round(averagedOptimalThreshold, 1)
         roundedBestAcc = round(bestUnknownAcc, 2)
+
+
+
         ax.scatter(bestFPR, bestUnknownAcc, color='red', label="Avg. Optimal Threshold=" + str(roundedAvgOptimalThreshold) + "\nAccuracy=" + str(roundedBestAcc))
         ax.legend(loc='lower right')
         models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest"]
@@ -349,7 +366,7 @@ class IncrementalLearningVisuals():
     def __init__(self):
         pass
 
-    def graphCodewordFrequency(self, listOfCodewords):
+    def graphCodewordFrequency(self, listOfCodewords, chosenCodeword, accuracy):
         '''
         Graphs the frequency of each codeword given in the list of codewords provided.
 
@@ -372,13 +389,16 @@ class IncrementalLearningVisuals():
         plt.setp(ax.get_xticklabels(), rotation=80, horizontalalignment='right', fontsize=6)
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
+        word = [str(bit) for bit in chosenCodeword]
+        chosenWordString = ''.join(word)
+
         ax.set_xlabel("Codeword")
         ax.set_ylabel("Frequency")
-        ax.set_title("Codeword Frequency")
+        ax.set_title("Codeword Frequency\nChosen Codeword: " + chosenWordString + "\nAccuracy: " + str(round(accuracy, 2)))
         plt.show()
         plt.clf()
 
-    def graphCodewordFrequency_TopFive(self, listOfCodewords):
+    def graphCodewordFrequency_TopFive(self, listOfCodewords, chosenCodeword, accuracy):
         '''
         Graphs the frequency of the 5 most frequent codewords given in the list of codewords provided.
 
@@ -406,9 +426,12 @@ class IncrementalLearningVisuals():
         plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right', fontsize=15)
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
+        word = [str(bit) for bit in chosenCodeword]
+        chosenWordString = ''.join(word)
+
         ax.set_xlabel("Codeword")
         ax.set_ylabel("Frequency")
-        ax.set_title("Top Five Most Frequent Codewords")
+        ax.set_title("Top Five Most Frequent Codewords\nChosen Codeword: " + chosenWordString + "\nAccuracy: " + str(round(accuracy, 2)))
         plt.show()
         plt.clf()
 
@@ -454,5 +477,62 @@ class IncrementalLearningVisuals():
         # For the line below, bbox_to_anchor manages where the legend will be located
         lgd = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
 
+        plt.show()
+        plt.clf()
+
+    def accuraciesPlot_ReinforcedVsInitial(self, initialCodewordAccuracies, reinforcedCodewordAccuracies, codeBook,
+                                           knownTrain, allData, unknownData, knownSingleDataPoints, saveFolderPath,
+                                           selectedModel, listOfSplits, codebookNum):
+        '''
+        Graphs the accuracies (for known/unknown predictions) for each split.
+
+        :param knownAccMinDict: Dictionary with key = split and value = split's known accuracy (min across all holdouts)
+        :param knownAccMaxDict: Dictionary with key = split and value = split's known accuracy (max across all holdouts)
+        :param unknownAccMinDict: Dictionary with key = split and value = split's unknown accuracy (min across all holdouts)
+        :param unknownAccMaxDict: Dictionary with key = split and value = split's unknown accuracy (max across all holdouts)
+        :param initialCodewordAccuracies: Mean (across all holdouts) of the known prediction accuracies.
+        :param reinforcedCodewordAccuracies: Mean (across all holdouts) of the unknown predictions accuracies.
+        :param codeBook: Codebook being used.
+        :param knownTrain: Data that was used for training the classifiers.
+        :param allData: All of the data (regardless of the split it belongs to).
+        :param unknownData: All data belonging to the unknown split.
+        :param knownSingleDataPoints: The single samples of known data used to test the threshold.
+        :param saveFolderPath: Path of the folder that will be used to save the figure.
+        :param selectedModel: Model used to make the predictions.
+        :param listOfSplits: All the splits used for testing.
+        :param codebookNum: The number of the codebook you're currently on.
+        :return: A figure showing the accuracies of known/unknown predictions across all desired splits.
+        '''
+        ax = plt.subplot(111)
+
+        # Representation of the means.
+        ax.plot(list(initialCodewordAccuracies.keys()), list(initialCodewordAccuracies.values()), marker='o', color='magenta',
+                label='Initial Codeword', linestyle = '--')
+
+        ax.plot(list(reinforcedCodewordAccuracies.keys()), list(reinforcedCodewordAccuracies.values()), marker='o', color='cyan',
+                label='Reinforced Codeword', linestyle = '--')
+
+        plt.xticks(listOfSplits)
+
+        ax.set_title("Prediction Accuracy per Split")
+        ax.set_xlabel("Percent Unknown")
+        ax.set_ylabel("Accuracy")
+
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+        handles, labels = ax.get_legend_handles_labels()
+        lgd = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
+
+        knownData = len(allData) - len(unknownData)
+        percentTraining = round((len(knownTrain)/knownData), 2)
+        models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest"] # Corresponds to the number assigned for each classifier in Trainer.py
+        # selectedModel has 1 subtracted from it because the models in the Trainer class are assigned with numbers
+        # 1 - 4.
+        saveInfo = saveFolderPath + "\\" + models[selectedModel - 1] +"_CB" + str(codebookNum) +"_CWLength(" + str(
+            len(codeBook[0])) + ")" + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
+            + str(len(knownSingleDataPoints))+ "_PercentTrainingData"+ str(percentTraining)  + ".png"
+
+        plt.savefig(saveInfo, dpi = 300, bbox_extra_artists = (lgd,), bbox_inches = 'tight')
         plt.show()
         plt.clf()
