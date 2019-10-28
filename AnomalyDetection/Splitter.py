@@ -110,7 +110,7 @@ class Splitter():
         return knownThresholdData, knownThresholdLabels, singleDataSamples, \
                singleDataSamplesLabels, knownData, knownLabels
 
-    def assignLabel(self, trimmedLabels, allLabels, percentUnknown, holdoutIndex):
+    def assignLabel(self, trimmedLabels, allLabels, percentUnknown, holdoutIndex, percentKnown):
         '''
         Determines whether a label will be known, unknown, or holdout.
 
@@ -119,17 +119,14 @@ class Splitter():
         :param percentUnknown: Percentage of the classes to be marked as unknown. NOTE: This is percent of classes NOT
                                percent of number of total samples.
         :param holdoutIndex: Index that will be used to select a holdout class.
+        :param percentKnown: Percentage of classes to be used as known. If you want to use all of the remaining
+                             classes that aren't marked as unknown, pass -1 as the value.
         :return: Lists of labels (unique) that will be used for splitting the "whole" data/labels into known, unknown,
                  and holdout lists necessary for training and validating.
         '''
 
         uniqueTrimmedLabels = np.unique(trimmedLabels).tolist()
         uniqueLabels = np.unique(allLabels).tolist()
-        numUnknown = int(len(uniqueTrimmedLabels) * percentUnknown) # Casting to int because whole numbers are required.
-
-        # Ensure that at least one class is being used as a holdout
-        if numUnknown == 0:
-            numUnknown = 1
 
         # Remove holdout class from selection of labels.
         # We select from the unique labels that haven't been trimmed yet because the indices that have been
@@ -138,19 +135,52 @@ class Splitter():
         # Remove the chosen holdout from the list of trimmed labels so that the holdout cannot be chosen as a known or
         # unknown class.
         uniqueTrimmedLabels.remove(holdoutClass)
+
+        # We calculate numUnknown after the removal of the holdout class
+        numUnknown = math.floor(len(uniqueTrimmedLabels) * percentUnknown) # Flooring to ensure no floats (we need ints)
+
+        # Ensure that at least one class is being used as a holdout
+        if numUnknown == 0:
+            numUnknown = 1
+
+
         # Randomly select which classes will be unknown.
         # We use the trimmed set of labels now becausae we only want to use classes that have enough
         # samples of data.
         listOfUnknownClasses = random.sample(uniqueTrimmedLabels, numUnknown)
         #Create list of what the known classes will be.
         listOfKnownClasses = []
-        for label in uniqueTrimmedLabels:
-            if label not in listOfUnknownClasses:
-                listOfKnownClasses.append(label)
+        if percentKnown is -1:
+            for label in uniqueTrimmedLabels:
+                if label not in listOfUnknownClasses:
+                    listOfKnownClasses.append(label)
+        else:
+            numKnownClasses = math.floor(len(uniqueTrimmedLabels) * percentKnown)
+            # Ensure there is one known class at minimum
+            if numKnownClasses == 0:
+                numKnownClasses = 1
+            # Make it so that we randomly select the known classes since we aren't using them all now.
+            random.shuffle(uniqueTrimmedLabels)
+            classCounter = 0
+            i = 0
+            totalClasses = len(uniqueTrimmedLabels)
+            while classCounter < numKnownClasses and i < totalClasses:
+                currentClass = uniqueTrimmedLabels[i]
+                if currentClass not in listOfUnknownClasses and currentClass is not holdoutClass:
+                    listOfKnownClasses.append(currentClass)
+                    classCounter += 1
+                i += 1
+
+            if(len(listOfKnownClasses) < numKnownClasses):
+                print("WARNING: Number of selected known classes is less than the specified percent amount.")
+                print("Check to make sure you aren't going above the maximum percent that can be used for the known split "
+                      "given the percent of classes used for the unknown split.")
+                print("Current Known Split:", percentKnown,
+                      "\nCurrent Unknown Split:", percentUnknown)
 
         return listOfUnknownClasses, listOfKnownClasses, holdoutClass
 
-    def splitDataAndLabels(self, data, allOrigTrimmedLabels, unknownClasses, holdoutClass):
+    def splitDataAndLabels(self, data, allOrigTrimmedLabels, unknownClasses, holdoutClass, selectedKnownClasses):
         '''
         Splits the data and labels into separate lists of holdout, known, or unknown.
         Will also deal with splitting of the known data through use of knownDataSplit().
@@ -187,6 +217,19 @@ class Splitter():
         #Deleting with a reversed list so that shifting won't
         #interfere with the process.
         sortedIndicies = sorted(indicesToDelete, reverse = True)
+        for index in sortedIndicies:
+            del data[index]
+            del allOrigTrimmedLabels[index]
+
+        # The remaining values in data and allOrigTrimmedLabels belong to classes that are known
+        # However, we may not be using all of the known data for our split (we only want to use the data
+        # that has been marked as known)
+        indicesToDelete = []
+        for i in range(len(data)):
+            if allOrigTrimmedLabels[i] not in selectedKnownClasses:
+                indicesToDelete.append(i)
+
+        sortedIndicies = sorted(indicesToDelete, reverse=True)
         for index in sortedIndicies:
             del data[index]
             del allOrigTrimmedLabels[index]
@@ -288,3 +331,48 @@ class Splitter():
             reducedThresholdBuildingLabels.append(largerSplitLabels[index])
 
         return reducedThresholdBuildingData, reducedThresholdBuildingLabels
+
+    def knownTrainingDataSplit(self, trainingData, trainingLabels, percentHoldout):
+        '''
+        Splits the training data so that the classifiers can be trained and then a portion
+        of the same classes used for training can be used for developing the threshold.
+        :param trainingData: Data used for training the classifiers
+        :param trainingLabels: Labels that correspond to the data used for training the classifiers.
+        :param percentHoldout: The percent of the training data to be held out for threshold building.
+        :return: 2 pairs of data and labels: One for training one for threshold building
+        '''
+        indicesToDelete = []
+        thresholdBuildingData = []
+        thresholdBuildingLabels = []
+        uniqueLabels = np.unique(trainingLabels)
+        for uniqueLabel in uniqueLabels:
+            index = 0
+            potentialIndices = []
+            # Gathering all indices of data/label pairings for a particular
+            # known class
+            for label in trainingLabels:
+                if uniqueLabel == label:
+                    potentialIndices.append(index)
+                index += 1
+            # Randomly selecting 20% of that data to be used as the holdout
+            endIndex = len(potentialIndices) - 1
+            numDataSamples = math.ceil(len(potentialIndices) * percentHoldout)
+            for i in range(numDataSamples):
+                randIdx = random.randint(0, endIndex)
+                chosenIndex = potentialIndices[randIdx]
+                while chosenIndex in indicesToDelete:
+                    randIdx = random.randint(0, endIndex)
+                    chosenIndex = potentialIndices[randIdx]
+
+                thresholdBuildingData.append(trainingData[chosenIndex])
+                thresholdBuildingLabels.append(trainingLabels[chosenIndex])
+                indicesToDelete.append(chosenIndex)
+        sortedIndices = sorted(indicesToDelete, reverse=True)
+        for index in sortedIndices:
+            del trainingData[index]
+            del trainingLabels[index]
+
+        return trainingData, trainingLabels, thresholdBuildingLabels, thresholdBuildingLabels
+
+
+

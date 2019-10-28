@@ -3,8 +3,6 @@ import seaborn as sn
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from collections import Counter
-import itertools
-import operator
 
 # Contains methods for making graphs for anomaly detection (general).
 class Visuals():
@@ -157,11 +155,11 @@ class Visuals():
         plt.show()
         plt.clf()
 
-    def accuraciesPlot(self, knownAccMinDict, knownAccMaxDict,
-                       unknownAccMinDict, unknownAccMaxDict, knownMean,
-                       unknownMean, codeBook, knownTrain, allData,
-                       unknownData, knownSingleDataPoints, saveFolderPath, selectedModel,
-                       listOfSplits, codebookNum):
+    def accuraciesPlot_MinMaxValues(self, knownAccMinDict, knownAccMaxDict,
+                                    unknownAccMinDict, unknownAccMaxDict, knownMean,
+                                    unknownMean, codeBook, knownTrain, allData,
+                                    unknownData, knownSingleDataPoints, saveFolderPath, selectedModel,
+                                    listOfSplits, codebookNum, percentKnownClasses):
         '''
         Graphs the accuracies (for known/unknown predictions) for each split.
 
@@ -201,8 +199,10 @@ class Visuals():
                  label='Unknown Mean', linestyle = '--')
 
         plt.xticks(listOfSplits)
+        plt.yticks([0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1])
 
-        ax.set_title("Prediction Accuracy per Split")
+
+        ax.set_title("Detection Rate per Split")
         ax.set_xlabel("Percent Unknown")
         ax.set_ylabel("Accuracy")
 
@@ -219,9 +219,72 @@ class Visuals():
         # 1 - 4.
         saveInfo = saveFolderPath + "\\" + models[selectedModel - 1] +"_CB" + str(codebookNum) +"_CWLength(" + str(
             len(codeBook[0])) + ")" + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
-            + str(len(knownSingleDataPoints))+ "_PercentTrainingData"+ str(percentTraining)  + ".png"
+            + str(len(knownSingleDataPoints))+ "_PercentTrainingData"+ str(percentTraining)+ \
+            "_PercentKnownClasses" + str (percentKnownClasses) + ".png"
 
         plt.savefig(saveInfo, dpi = 300, bbox_extra_artists = (lgd,), bbox_inches = 'tight')
+        plt.show()
+        plt.clf()
+
+    def accuraciesPlot_MeansOnly(self, knownMean,
+                                 unknownMean, codeBook, knownTrain, allData,
+                                 unknownData, knownSingleDataPoints, saveFolderPath, selectedModel,
+                                 listOfSplits, codebookNum, percentKnownClasses):
+        '''
+        Graphs the accuracies (for known/unknown predictions) for each split.
+
+        :param knownAccMinDict: Dictionary with key = split and value = split's known accuracy (min across all holdouts)
+        :param knownAccMaxDict: Dictionary with key = split and value = split's known accuracy (max across all holdouts)
+        :param unknownAccMinDict: Dictionary with key = split and value = split's unknown accuracy (min across all holdouts)
+        :param unknownAccMaxDict: Dictionary with key = split and value = split's unknown accuracy (max across all holdouts)
+        :param knownMean: Mean (across all holdouts) of the known prediction accuracies.
+        :param unknownMean: Mean (across all holdouts) of the unknown predictions accuracies.
+        :param codeBook: Codebook being used.
+        :param knownTrain: Data that was used for training the classifiers.
+        :param allData: All of the data (regardless of the split it belongs to).
+        :param unknownData: All data belonging to the unknown split.
+        :param knownSingleDataPoints: The single samples of known data used to test the threshold.
+        :param saveFolderPath: Path of the folder that will be used to save the figure.
+        :param selectedModel: Model used to make the predictions.
+        :param listOfSplits: All the splits used for testing.
+        :param codebookNum: The number of the codebook you're currently on.
+        :return: A figure showing the accuracies of known/unknown predictions across all desired splits.
+        '''
+        ax = plt.subplot(111)
+
+        # Representation of the means.
+        ax.plot(list(knownMean.keys()), list(knownMean.values()), marker='o', color='magenta',
+                label='Known Mean')
+
+        ax.plot(list(unknownMean.keys()), list(unknownMean.values()), marker='o', color='cyan',
+                label='Unknown Mean')
+
+        plt.xticks(listOfSplits)
+        plt.yticks([0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1])
+
+        ax.set_title("Detection Rate per Split")
+        ax.set_xlabel("Percent Unknown")
+        ax.set_ylabel("Accuracy")
+
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+        handles, labels = ax.get_legend_handles_labels()
+        lgd = ax.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
+
+        knownData = len(allData) - len(unknownData)
+        percentTraining = round((len(knownTrain) / knownData), 2)
+        models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes",
+                  "Random Forest"]  # Corresponds to the number assigned for each classifier in Trainer.py
+        # selectedModel has 1 subtracted from it because the models in the Trainer class are assigned with numbers
+        # 1 - 4.
+        saveInfo = saveFolderPath + "\\" + models[selectedModel - 1] + "_CB" + str(
+            codebookNum) + "_CWLength(" + str(
+            len(codeBook[0])) + ")" + "_UnknownHoldoutClasses1_KnownHoldoutSamples" \
+                   + str(len(knownSingleDataPoints)) + "_PercentTrainingData" + str(percentTraining) + \
+                   "_PercentKnownClasses" + str(percentKnownClasses) + ".png"
+
+        plt.savefig(saveInfo, dpi=300, bbox_extra_artists=(lgd,), bbox_inches='tight')
         plt.show()
         plt.clf()
 
@@ -271,17 +334,83 @@ class Visuals():
         roundedAvgOptimalThreshold = round(averagedOptimalThreshold, 1)
         roundedBestAcc = round(bestUnknownAcc, 2)
 
-
-
         ax.scatter(bestFPR, bestUnknownAcc, color='red', label="Avg. Optimal Threshold=" + str(roundedAvgOptimalThreshold) + "\nAccuracy=" + str(roundedBestAcc))
         ax.legend(loc='lower right')
-        models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest"]
+        models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest",
+                  "KMeansClustering", "OneClassSVM"]
         saveInfo = saveFolderPath + "\\" + models[selectedModel - 1] + "_CB"+ str(codebookNum) + "_CWLength(" + str(
             len(codeBook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
         plt.savefig(saveInfo)
         plt.show()
         plt.clf()
 
+    def graphROC_VaryingCodelengthTest(self, unknownAccs, knownAccs,
+                                       bestKnownAcc,
+                                       bestUnknownAcc, averagedOptimalThreshold):
+        '''
+        Creates an ROC graph. unknownAccs used for true positive rate. knownAccs used for false positive rate.
+        besteknownAccs is used to graph the point on the ROC that corresponds to the accuracy of the threshold
+        that was determined to be most optimal.
+
+        :param unknownAccs: List of unknown accuracies.
+        :param knownAccs: List of known accuracies.
+        :param split: Split that's currently being used.
+        :param codeBook: Codebook that's currently being used.
+        :param saveFolderPath: Path of the folder that will be used to save the figure.
+        :param selectedModel: Model being used to make the predictions.
+        :param bestKnownAcc: Highest known accuracy (across all the holdouts).
+        :param bestUnknownAcc: Highest unknown accuracy (across all the holdouts).
+        :param averagedOptimalThreshold: Optimal threshold averaged across all holdouts.
+        :param codebookNum: Number of the codebook you're currently on.
+        :return: A ROC graph that also shows the optimal threshold that corresponds to the highest known/unknown accuracy.
+        '''
+        # CB1
+        fprList = []
+        bestFPR = 1 - bestKnownAcc[0]
+        # False Positive Rate is = 1 - specificity
+        for acc in knownAccs[0]:
+            fprList.append(1 - acc)
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.axis([0, 1, 0, 1, ])
+
+        plt.plot(fprList, unknownAccs[0], linewidth=2, label="1.0c Codeword Length", color='green', zorder=1)
+
+        plt.scatter(bestFPR, bestUnknownAcc[0], color='red',
+                   label="Avg. Optimal Threshold", zorder=2)
+
+        # # CB2
+        fprList = []
+        bestFPR = 1 - bestKnownAcc[1]
+        # False Positive Rate is = 1 - specificity
+        for acc in knownAccs[1]:
+            fprList.append(1 - acc)
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.axis([0, 1, 0, 1, ])
+        plt.plot(fprList, unknownAccs[1], linewidth=2, label="1.5c Codeword Length", color='blue', zorder=1)
+
+        plt.scatter(bestFPR, bestUnknownAcc[1], color='red', zorder=2)
+
+        # # CB3
+        fprList = []
+        bestFPR = 1 - bestKnownAcc[2]
+        # False Positive Rate is = 1 - specificity
+        for acc in knownAccs[2]:
+            fprList.append(1 - acc)
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.axis([0, 1, 0, 1, ])
+        plt.plot(fprList, unknownAccs[2], linewidth=2, label="2.0c Codeword Length", color='black', zorder=1)
+
+        plt.scatter(bestFPR, bestUnknownAcc[2], color='red', zorder=2)
+
+        plt.legend()
+        plt.show()
+        plt.clf()
 
     def generateConfusionMatrix(self, predictedValues, actualValues, codebook, saveFolderPath, selectedModel,
                                         codebookNum, split):
@@ -328,9 +457,9 @@ class Visuals():
         ax.set_ylabel('True Values')
         ax.set_title('Confusion Matrix')
         models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest"]
-        # saveInfo = saveFolderPath + "\\" + "_Original_" + models[selectedModel - 1] + "_CB" + str(codebookNum) + "_CWLength(" + str(
-        #     len(codebook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
-        # plt.savefig(saveInfo, dpi=100)
+        saveInfo = saveFolderPath + "\\" + "_Original_" + models[selectedModel - 1] + "_CB" + str(codebookNum) + "_CWLength(" + str(
+            len(codebook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
+        plt.savefig(saveInfo, dpi=100)
         plt.show()
         plt.clf()
 
@@ -352,10 +481,38 @@ class Visuals():
         ax.set_ylabel('True Values')
         ax.set_title('Confusion Matrix')
         models = ["SVM", "DT", "LDA", "KNN", "LogisticRegression", "NeuralNetwork", "NaiveBayes", "Random Forest"]
-        # saveInfo = saveFolderPath + "\\" + "_Averaged_" + models[selectedModel - 1] + "_CB" + str(
-        #     codebookNum) + "_CWLength(" + str(
-        #     len(codebook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
-        # plt.savefig(saveInfo, dpi=100)
+        saveInfo = saveFolderPath + "\\" + "_Averaged_" + models[selectedModel - 1] + "_CB" + str(
+            codebookNum) + "_CWLength(" + str(
+            len(codebook[0])) + ")" + "_Split(" + str(split) + ")" + ".png"
+        plt.savefig(saveInfo, dpi=100)
+        plt.show()
+        plt.clf()
+
+    def graphErrorOverTime(self, time, unknownDetectionError, knownDetectionError, knownClassificationError):
+        '''
+        Will graph the errors made over time for unknown detections, known detections, and known classifications.
+
+        :param time: The number of data samples used in the experiment (each prediction represents a unit of time).
+        :param unknownDetectionError: Cumulative errors for unknown detection.
+        :param knownDetectionError: Cumulative errors for known detection
+        :param knownClassificationError: Cumulative errors for known classification
+        :return:
+        '''
+        fig, ax = plt.subplots()
+        plt.xlabel("Time")
+        plt.ylabel("Mean Error")
+
+        # New Class Detection Error
+        ax.plot(time, unknownDetectionError, color='red', linewidth=2, label="Unknown Detection Error")
+
+        # Known Class Detection Error
+        ax.plot(time, knownDetectionError, color='blue', linewidth=2, label="Known Class Detection Error")
+
+        # Known Class Classification Error
+
+        ax.plot(time, knownClassificationError, color='green', linewidth=2, label="Known Class Classification Error")
+
+        plt.legend()
         plt.show()
         plt.clf()
 
@@ -536,3 +693,104 @@ class IncrementalLearningVisuals():
         plt.savefig(saveInfo, dpi = 300, bbox_extra_artists = (lgd,), bbox_inches = 'tight')
         plt.show()
         plt.clf()
+
+    def graphErrorOverTime(self, timeOne, timeTwo, errorListOne, errorListTwo, splits, stdMasterListTwo, stdMasterListOne):
+        fig, ax = plt.subplots()
+
+
+        plt.xlabel("Time")
+        plt.ylabel("Mean Cumulative Error")
+
+        # For the Legend:
+        # ax.plot(0,0, color='blue', label="Reinforcement Phase")
+        # ax.plot(timeThree[0], errorListThree[0], color='green', label="Testing Phase")
+
+        # 10%
+        stdUpOne = [x1 + x2 for (x1, x2) in zip(errorListOne[0], stdMasterListOne[0])]
+        stdDownOne = [x1 - x2 for (x1, x2) in zip(errorListOne[0], stdMasterListOne[0])]
+
+        labelOneText_P1 = "" + str(int(splits[0]*100)) + "% Unknown"
+        ax.plot(timeOne[0], errorListOne[0], color='green',label=labelOneText_P1 , linewidth=2) # Grouping with the Reinforcement Phase for now (can separate later).
+        # plt.fill_between(timeOne[0], stdDownOne, stdUpOne, color='blue', alpha=0.3)
+        # ax.plot(timeTwo[0], errorListTwo[0], color='blue', linewidth=2)
+
+        ax.plot(timeTwo[0], errorListTwo[0], color='green', linewidth=2)
+
+        stdUpTwo = [x1 + x2 for (x1, x2) in zip(errorListTwo[0], stdMasterListTwo[0])]
+        stdDownTwo = [x1 - x2 for (x1, x2) in zip(errorListTwo[0], stdMasterListTwo[0])]
+
+        # plt.fill_between(timeTwo[0], stdUpTwo, stdDownTwo, color='blue',
+        #                  alpha=0.3)
+
+        # 30%
+        stdUpOne = [x1 + x2 for (x1, x2) in zip(errorListOne[1], stdMasterListOne[1])]
+        stdDownOne = [x1 - x2 for (x1, x2) in zip(errorListOne[1], stdMasterListOne[1])]
+
+        # plt.fill_between(timeOne[1], stdDownOne, stdUpOne, color='purple', alpha=0.30)
+        labelTwoText_P1 = "" + str(int(splits[1]*100)) + "% Unknown"
+        ax.plot(timeOne[1], errorListOne[1], 'k--' , color='green', label=labelTwoText_P1,
+                linewidth=2)  # Grouping with the Reinforcement Phase for now (can separate later).
+
+        # ax.plot(timeTwo[1], errorListTwo[1], 'k--' , color='blue', linewidth=2)
+        stdUpTwo = [x1 + x2 for (x1, x2) in zip(errorListTwo[1], stdMasterListTwo[1])]
+        stdDownTwo = [x1 - x2 for (x1, x2) in zip(errorListTwo[1], stdMasterListTwo[1])]
+        # plt.fill_between(timeTwo[1], stdDownTwo, stdUpTwo, color='purple',
+        #                  alpha=0.30)
+
+        ax.plot(timeTwo[1], errorListTwo[1], 'k--', color='green', linewidth=2)
+
+        # # # 50%
+        stdUpOne = [x1 + x2 for (x1, x2) in zip(errorListOne[2], stdMasterListOne[2])]
+        stdDownOne = [x1 - x2 for (x1, x2) in zip(errorListOne[2], stdMasterListOne[2])]
+
+        # plt.fill_between(timeOne[2], stdDownOne, stdUpOne, color='red', alpha=0.30)
+        labelThreeText_P1 = "" + str(int(splits[2]*100)) + "% Unknown"
+        ax.plot(timeOne[2], errorListOne[2], ':' , color='green', label=labelThreeText_P1,
+                linewidth=2)  # Grouping with the Reinforcement Phase for now (can separate later).
+
+        # ax.plot(timeTwo[2], errorListTwo[2],':' , color='blue', linewidth=2)
+        stdUpTwo = [x1 + x2 for (x1, x2) in zip(errorListTwo[2], stdMasterListTwo[2])]
+        stdDownTwo = [x1 - x2 for (x1, x2) in zip(errorListTwo[2], stdMasterListTwo[2])]
+        # plt.fill_between(timeTwo[2], stdDownTwo, stdUpTwo, color='red',
+        #                  alpha=0.30)
+
+        ax.plot(timeTwo[2], errorListTwo[2], ':', color='green', linewidth=2)
+
+
+
+        # lims = [
+        #     np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
+        #     np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
+        # ]
+        # x = np.linspace(0, np.max(ax.get_xlim()), np.max(ax.get_ylim()))
+        # y=0.5*x
+        # ax.plot(x, y, 'k-.', color='black', alpha=0.50, label="50% Error")
+        # ax.set_xlim(lims)
+        # ax.set_ylim(lims)
+
+
+        plt.legend(loc='upper left')
+        plt.show()
+        plt.clf()
+
+
+    def graphErrorOverTime_ThreeAccuracies(self, time, newClassError, knownDetectionError, knownClassificationError):
+            fig, ax = plt.subplots()
+            plt.xlabel("Time")
+            plt.ylabel("Mean Error")
+
+            # New Class Detection Error
+            ax.plot(time, newClassError, color='red', linewidth=2, label="New Class Detection Error")
+
+            # Known Class Detection Error
+            ax.plot(time, knownDetectionError, color='blue', linewidth=2, label="Known Class Detection Error")
+
+            # Known Class Classification Error
+
+            ax.plot(time, knownClassificationError, color='green', linewidth=2, label="Known Class Classification Error")
+
+            plt.legend()
+            plt.show()
+            plt.clf()
+
+

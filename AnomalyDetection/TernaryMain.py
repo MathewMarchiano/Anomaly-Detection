@@ -195,10 +195,10 @@ def runAnomalyDetectionTests_Ternary(listOfCBs, listOfThresholds, listOfNewSplit
              knownAccuracies = []
              iterationCount = 1
 
-         vis.accuraciesPlot(knownMinAccDictionay, knownMaxAccDictionary, unknownMinAccDictionary,
-                           unknownMaxAccDictionary,knownMeanDictionary, unknownMeanDictionary,
-                           codebook, knownData, trimmedAllData, unknownThresholdBuildingData, singleDataSamples,
-                           folderPathAcc, classifier, listOfNewSplits, codebookNum)
+         vis.accuraciesPlot_MinMaxValues(knownMinAccDictionay, knownMaxAccDictionary, unknownMinAccDictionary,
+                                         unknownMaxAccDictionary, knownMeanDictionary, unknownMeanDictionary,
+                                         codebook, knownData, trimmedAllData, unknownThresholdBuildingData, singleDataSamples,
+                                         folderPathAcc, classifier, listOfNewSplits, codebookNum)
 
 # Returns a list of indices that are able to be a holdout class (e.g. they contain >=3 samples of data and won't be
 # removed).

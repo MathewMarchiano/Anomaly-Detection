@@ -1,4 +1,6 @@
 import numpy as np
+import HadamardMatrixGeneration as hmg
+import itertools
 
 class ThresholdManager():
 
@@ -63,6 +65,25 @@ class ThresholdManager():
                 highestUnknownAcc = unknownAcc
 
         return optimalThreshold, lowestDifference, highestKnownAcc, highestUnknownAcc
+
+    def findOptimalThreshold_CodebookBased_Averaged(self, codebook):
+        listOfDistances = []
+        allCombos = list(itertools.combinations(codebook, 2))
+        for combo in allCombos:
+            hammingDistance = hmg.hammingDistance(combo[0], combo[1])
+            listOfDistances.append(hammingDistance)
+
+        return sum(listOfDistances) / len(listOfDistances)
+
+    def findOptimalThreshold_CodebookBased_MaxDistance(self, codebook):
+        maxDistance = 0
+        allCombos = list(itertools.combinations(codebook, 2))
+        for combo in allCombos:
+            hammingDistance = hmg.hammingDistance(combo[0], combo[1])
+            if hammingDistance > maxDistance:
+                maxDistance = hammingDistance
+
+        return maxDistance
 
     def testAllThresholds(self, listOfThresholds, knownHDs, unknownHDs):
         '''

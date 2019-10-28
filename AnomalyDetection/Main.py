@@ -3,15 +3,17 @@ from AnomalyDetection.ThresholdManagement import ThresholdManager
 from AnomalyDetection.Graphing import Visuals
 from AnomalyDetection.Splitter import Splitter
 from AnomalyDetection.Trainer import Trainer
+import random
 import numpy as np
 import ast
 
 import warnings
 warnings.filterwarnings("ignore")
 
-def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, dataset,
+def runAnomalyDetectionTests_Complete(listOfCBs, listOfThresholds, listOfNewSplits, dataset,
                              labelCol, beginDataCol, endDataCol, classifier, folderPathAcc,
-                             folderPathHDs, ROCPath, buildTresholdHistogramPath, confusionMatrixPath):
+                             folderPathHDs, ROCPath, buildTresholdHistogramPath, confusionMatrixPath,
+                             percentKnownClasses, standardDeviations):
 
      # Determine which classes classes to cycle through (ignoring 'small' classes)
      holdoutIndices = getHoldoutIndices(dataset, labelCol, beginDataCol, endDataCol)
@@ -27,6 +29,14 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
      trainer = Trainer()
      tm = ThresholdManager()
      vis = Visuals()
+
+     #For 3 ROC graph
+     bestKnownAccuracyList = []
+     knownAccuraciesList = []
+     unknownAccuraciesList = []
+     averagedOptimalThresholdsList = []
+     bestUnknownAccuraciesList = []
+
 
      for codebook in listOfCBs:
          # All the dictionaries below are used in creating the graph of all
@@ -54,8 +64,15 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
          initTrimmedAllData, initTrimmedAllOriginalLabels, initScaledData, codewordColumns = \
                             processOriginalData(dh, allData, allOriginalLabels, savedOriginalLabels)
 
+
+
          codebookNum += 1
          for split in listOfNewSplits:
+             # For the error over time graph
+             cumulativeKnownDetectionErrors_Master = []
+             cumulativeKnownClassificationErrors_Master = []
+             cumulativeUnknownDetectionErrrors_Master = []
+
              # Used for ROC
              knownAccuraciesToAverage = []
              unknownAccuraciesToAverage = []
@@ -72,12 +89,16 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  trimmedAllOriginalLabels = initTrimmedAllOriginalLabels.copy()
                  scaledData = initScaledData.copy()
 
-                 listOfUnknownClasses, listOfKnownClasses, holdoutClass = \
-                     splitter.assignLabel(trimmedAllOriginalLabels, savedOriginalLabels, split, holdout)
 
-                 knownThresholdBuildingData, knownThresholdBuildingLabels, singleDataSamples, singleDataSamplesLabels, knownData, \
-                 knownLabels, unknownThresholdBuildingData, unknownThresholdBuildingLabels, holdoutData, holdoutLabels \
-                     = splitter.splitDataAndLabels(scaledData, trimmedAllOriginalLabels, listOfUnknownClasses, holdoutClass)
+
+                 listOfUnknownClasses, listOfKnownClasses, holdoutClass = \
+                     splitter.assignLabel(trimmedAllOriginalLabels, savedOriginalLabels, split, holdout, percentKnownClasses)
+
+                 knownThresholdBuildingData, knownThresholdBuildingLabels, singleDataSamples, singleDataSamplesLabels, \
+                 classifierTrainingData, classifierTrainingLabels, unknownThresholdBuildingData, \
+                 unknownThresholdBuildingLabels, holdoutData, holdoutLabels \
+                     = splitter.splitDataAndLabels(scaledData, trimmedAllOriginalLabels, listOfUnknownClasses, holdoutClass,
+                                                   listOfKnownClasses)
 
                  # Ensuring number of unknown threshold building data samples never exceeds known data samples
                  if len(unknownThresholdBuildingData) > len(knownThresholdBuildingData):
@@ -85,21 +106,29 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                          splitter.reduceThresholdBuildingSamples_FewestClasses(knownThresholdBuildingData,
                                                         unknownThresholdBuildingData, unknownThresholdBuildingLabels)
 
-                 knownCWLabels = trainer.convertLabelToCodeword(codewordColumns, knownLabels)
-                 listOfClassifiers = trainer.trainClassifiers(knownData, knownCWLabels, classifier, knownLabels)
+                 knownCWLabels = trainer.convertLabelToCodeword(codewordColumns, classifierTrainingLabels)
+                 listOfClassifiers = trainer.trainClassifiers(classifierTrainingData, knownCWLabels, classifier, classifierTrainingLabels)
 
                  # Getting predictions on all relevant data:
-                 unknownThresholdBuildingPreds, holdoutClassPreds, singleDataSamplesPreds, knownThresholdBuildingPreds = \
+                 unknownThresholdBuildingPreds, holdoutClassPreds, singleDataSamplesPreds, knownThresholdBuildingPreds,\
+                     trainingDataPredictions = \
                                             getPredictions(unknownThresholdBuildingData, holdoutData, singleDataSamples,
-                                                                 knownThresholdBuildingData, listOfClassifiers, trainer)
+                                                                 knownThresholdBuildingData, listOfClassifiers, trainer,
+                                                                  classifierTrainingData)
 
                  # Getting the shortest hamming distance that each prediction corresponds to:
-                 unknownThresholdBuildingHDs, holdoutClassHDs, singleDataSamplesHDs, knownThresholdBuildingHDs = \
-                     getMinimumHammingDistanceLists(trainer, codebook, unknownThresholdBuildingPreds, holdoutClassPreds,
-                                                singleDataSamplesPreds, knownThresholdBuildingPreds)
+                 unknownThresholdBuildingHDs, holdoutClassHDs, \
+                 singleDataSamplesHDs, knownThresholdBuildingHDs, trainingDataHDs  = \
+                 getMinimumHammingDistanceLists(trainer, codebook, unknownThresholdBuildingPreds, holdoutClassPreds,
+                                                singleDataSamplesPreds, knownThresholdBuildingPreds, trainingDataPredictions)
 
-                 optimalThreshold, lowestDifference, highestKnownAcc, highestUnknownAcc = \
-                        tm.findOptimalThreshold(listOfThresholds, knownThresholdBuildingHDs, unknownThresholdBuildingHDs)
+                 if split > 0:
+                     optimalThreshold, lowestDifference, highestKnownAcc, highestUnknownAcc = \
+                            tm.findOptimalThreshold(listOfThresholds, knownThresholdBuildingHDs, unknownThresholdBuildingHDs)
+                 else:
+                     optimalThreshold = np.mean(knownThresholdBuildingHDs)
+                     optimalThreshold += np.std(knownThresholdBuildingHDs) * standardDeviations
+
 
                  # Updating the predicted codewords. Used for creating confusion matrix (not needed otherwise, yet).
                  unknownECOCPreds, holdoutClassECOCPreds, singleDataSamplesECOCPreds, knownThresholdBuildingECOCPreds = \
@@ -117,11 +146,11 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  # is showing slightly below).
                  # The final argument "True" is used to determine where this function should save to file (read
                  # function's comment in the DataManagement class to read more).
-                 vis.graphThresholdTestHistogram(knownThresholdBuildingHDs, unknownThresholdBuildingHDs, optimalThreshold,
-                                                 codebookNum, split, highestKnownAcc,
-                                                 highestUnknownAcc, 12, holdout, allData,
-                                                 unknownThresholdBuildingData, knownData, codebook,
-                                                 singleDataSamples, buildTresholdHistogramPath, classifier, True)
+                 # vis.graphThresholdTestHistogram(knownThresholdBuildingHDs, unknownThresholdBuildingHDs, optimalThreshold,
+                 #                                 codebookNum, split, highestKnownAcc,
+                 #                                 highestUnknownAcc, 12, holdout, allData,
+                 #                                 unknownThresholdBuildingData, classifierTrainingData, codebook,
+                 #                                 singleDataSamples, buildTresholdHistogramPath, classifier, True)
 
                  # Data for generating ROC
                  knownAccuraciesAll, unknownAccuraciesAll = tm.testAllThresholds(listOfThresholds,
@@ -136,19 +165,27 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
                  iterationCount += 1
 
                  optimalThresholds.append(optimalThreshold)
-                 highestKnownAccuracies.append(highestKnownAcc)
-                 highestUnknownAccuracies.append(highestUnknownAcc)
-                 listOfDifferences.append(lowestDifference)
+                 print(optimalThreshold)
+                 # highestKnownAccuracies.append(highestKnownAcc)
+                 # highestUnknownAccuracies.append(highestUnknownAcc)
+                 # listOfDifferences.append(lowestDifference)
                  unknownAccuracies.append(unknownHoldoutDataThresholdAcc)
                  knownAccuracies.append(knownHoldoutDataThresholdAcc)
+
+
+                 # For three errors graph
+                 getCumulativeErrors(singleDataSamplesECOCPreds, codewordSDSLabels,
+                                     holdoutClassECOCPreds, holdoutClassLabels)
+
 
                  #Graphing to see how threshold is performing/testing threshold visualization:
                  # The final argument "False" is used to determine where this function should save to file (read
                  # function's comment in the DataManagement class to read more).
-                 vis.graphThresholdTestHistogram(singleDataSamplesHDs, holdoutClassHDs, optimalThreshold, codebookNum,
-                                                split, knownHoldoutDataThresholdAcc, unknownHoldoutDataThresholdAcc,
-                                                12, holdoutClass, trimmedAllData, unknownThresholdBuildingData, knownData,
-                                                codebook, singleDataSamples, folderPathHDs, classifier, False)
+
+                 # vis.graphThresholdTestHistogram(singleDataSamplesHDs, holdoutClassHDs, optimalThreshold, codebookNum,
+                 #                                split, knownHoldoutDataThresholdAcc, unknownHoldoutDataThresholdAcc,
+                 #                                12, holdoutClass, trimmedAllData, unknownThresholdBuildingData, classifierTrainingData,
+                 #                                codebook, singleDataSamples, folderPathHDs, classifier, False)
 
 
              # ROC
@@ -157,12 +194,19 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
              averagedBestKnownAcc = np.mean(highestKnownAccuracies)
              averagedBestUnknownAcc = np.mean(highestUnknownAccuracies)
              averagedBestThreshold = np.mean(optimalThresholds)
-             vis.graphROC(averagedUnknownAccuracies, averagedKnownAccuracies, split, codebook, ROCPath,
-                          classifier, averagedBestKnownAcc, averagedBestUnknownAcc, averagedBestThreshold, codebookNum)
+
+             bestKnownAccuracyList.append(averagedBestKnownAcc)
+             knownAccuraciesList.append(averagedKnownAccuracies)
+             unknownAccuraciesList.append(averagedUnknownAccuracies)
+             averagedOptimalThresholdsList.append(averagedBestThreshold)
+             bestUnknownAccuraciesList.append(averagedBestUnknownAcc)
+
+             # vis.graphROC(averagedUnknownAccuracies, averagedKnownAccuracies, split, codebook, ROCPath,
+             #              classifier, averagedBestKnownAcc, averagedBestUnknownAcc, averagedBestThreshold, codebookNum)
 
              # Confusion matrix
-             vis.generateConfusionMatrix(predictions, actuals, codebook, confusionMatrixPath, classifier, codebookNum,
-                                         split)
+             # vis.generateConfusionMatrix(predictions, actuals, codebook, confusionMatrixPath, classifier, codebookNum,
+             #                             split)
 
              printResults(unknownAccuracies, knownAccuracies, optimalThresholds, codebookNum, split)
 
@@ -187,10 +231,12 @@ def runAnomalyDetectionTests(listOfCBs, listOfThresholds, listOfNewSplits, datas
              knownAccuracies = []
              iterationCount = 1
 
-         vis.accuraciesPlot(knownMinAccDictionay, knownMaxAccDictionary, unknownMinAccDictionary,
-                           unknownMaxAccDictionary,knownMeanDictionary, unknownMeanDictionary,
-                           codebook, knownData, trimmedAllData, unknownThresholdBuildingData, singleDataSamples,
-                           folderPathAcc, classifier, listOfNewSplits, codebookNum)
+         vis.accuraciesPlot_MeansOnly(knownMeanDictionary, unknownMeanDictionary,
+                                         codebook, classifierTrainingData, trimmedAllData, unknownThresholdBuildingData, singleDataSamples,
+                                         folderPathAcc, classifier, listOfNewSplits, codebookNum, percentKnownClasses)
+
+     # vis.graphROC_VaryingCodelengthTest(unknownAccuraciesList, knownAccuraciesList, bestKnownAccuracyList,
+     #                                    bestUnknownAccuraciesList, averagedOptimalThresholdsList)
 
 # Returns a list of indices that are able to be a holdout class (e.g. they contain >=3 samples of data and won't be
 # removed).
@@ -233,13 +279,15 @@ def processOriginalData(dataHandler, data, labels, savedLabels):
     return trimmedAllData, trimmedAllOriginalLabels, scaledData, codewordColumns
 
 # Gets the list of codeword predictions for all appropriate splits of data.
-def getPredictions(unknownData, holdoutData, singleDataSamples, knownValidationData, listOfClassifiers, trainer):
+def getPredictions(unknownData, holdoutData, singleDataSamples, knownValidationData, listOfClassifiers, trainer,
+                   trainingData):
     unknownPreds = trainer.getPredictions(unknownData, listOfClassifiers)
     holdoutClassPreds = trainer.getPredictions(holdoutData, listOfClassifiers)
     singleDataSamplesPreds = trainer.getPredictions(singleDataSamples, listOfClassifiers)
     knownValidationPreds = trainer.getPredictions(knownValidationData, listOfClassifiers)
+    trainingDataPredictions = trainer.getPredictions(trainingData, listOfClassifiers)
 
-    return unknownPreds, holdoutClassPreds, singleDataSamplesPreds, knownValidationPreds
+    return unknownPreds, holdoutClassPreds, singleDataSamplesPreds, knownValidationPreds, trainingDataPredictions
 
 # Handles the updating of predicted codewords (i.e. "autocorrecting" a predicted codeword to the codeword in the
 # codebook with the shortest Hamming distance). If the codeword has a minimum HD greater than the value of the
@@ -254,11 +302,12 @@ def updatePredictions(trainer, codebook, unknownThresholdBuildingPreds, holdoutC
     return unknownECOCPreds, holdoutClassECOCPreds, singleDataSamplesECOCPreds, knownValidationECOCPreds
 
 def getMinimumHammingDistanceLists(trainer, codebook, unknownThresholdBuildingPreds, holdoutClassPreds,
-                                   singleDataSamplesPreds, knownThresholdBuildingPreds):
+                                   singleDataSamplesPreds, knownThresholdBuildingPreds, trainingDataPredictions):
     unknownThresholdBuildingHDs = []
     holdoutClassHDs = []
     singleDataSamplesHDs = []
     knownThresholdBuildingHDs = []
+    knownDataForThresholdHDs = []
 
     for prediction in unknownThresholdBuildingPreds:
         unknownThresholdBuildingHDs.append(trainer.getMinimumHammingDistance(codebook, prediction))
@@ -272,7 +321,11 @@ def getMinimumHammingDistanceLists(trainer, codebook, unknownThresholdBuildingPr
     for prediction in knownThresholdBuildingPreds:
         knownThresholdBuildingHDs.append(trainer.getMinimumHammingDistance(codebook, prediction))
 
-    return unknownThresholdBuildingHDs, holdoutClassHDs, singleDataSamplesHDs, knownThresholdBuildingHDs
+    for prediction in trainingDataPredictions:
+        knownDataForThresholdHDs.append(trainer.getMinimumHammingDistance(codebook, prediction))
+
+    return unknownThresholdBuildingHDs, holdoutClassHDs, singleDataSamplesHDs, knownThresholdBuildingHDs, \
+           knownDataForThresholdHDs
 
 # Parses a text file containing all of the information necessary to run "runAnomalyDetectionTests" in order to
 # retrieve all necessary variables. The only detail it doesn't include is the desired classifier to train with.
@@ -330,28 +383,97 @@ def parseDatasetInfoFile(textFile):
            labelsColumn, dataBeginColumn, dataEndColumn, filePathROC, filePathBuildingThresholdHistogram, \
            filePathConfusionMatrix
 
+def averageResults_DetectionRateTest(knownDetectionErrors, knownClassificationErrors, unknownDetectionErrors, numSamples):
+    '''
+    Averages a nested list of  results for each of the following errors. Used to generate the ThreeAccuracies graph.
+    :param knownDetectionErrors: Nested list of all known detection errors.
+    :param knownClassificationErrors: Nested list of all known classification errors.
+    :param unknownDetectionErrors: Nested list of all unknown detection errors.
+    :param numSamples: Number of samples you want to use from the experiment.
+    :return:
+    '''
+    averagedDetectingKnownClass_Error = np.mean(knownDetectionErrors, axis=0).tolist()[numSamples]
+    averagedClassifyingKnownClass_Error = np.mean(knownClassificationErrors, axis=0).tolist()[numSamples]
+    averagedDetectingUnknownClass_Error = np.mean(unknownDetectionErrors, axis=0).tolist()[numSamples]
 
-print("Please enter the path to your parameter value file")
-parameterValueFile = input().replace('"', '')
-print(parameterValueFile)
-codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
-                    labelsColumn, dataBeginColumn, dataEndColumn, ROCPath, buildThresholdHistogramPath, confusionMatrixPath = \
-                    parseDatasetInfoFile(parameterValueFile)
-listOfCBs = [codebook1, codebook2, codebook3]
+    return averagedDetectingKnownClass_Error, averagedClassifyingKnownClass_Error, averagedDetectingUnknownClass_Error
 
-print("Please select which classifier you would like to use:")
-print("\tFor SVM, enter 1.")
-print("\tFor DT, enter 2.")
-print("\tFor LDA, enter 3.")
-print("\tFor KNN, enter 4.")
-print("\tFor Logistic Regression, enter 5.")
-print("\tFor Neural Network, enter 6.")
-print("\tFor Naive Bayes, enter 7.")
-print("\tFor Random Forest, enter 8.")
-chosenClassifier = int(input())
-classifiers = ["SVM", "DT", "LDA", "KNN", "Logistic Regression", "Neural Network", "Naive Bayes", "Random Forest"]
-print(classifiers[chosenClassifier - 1], "chosen.")
-print("Running...")
-runAnomalyDetectionTests(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
-                         dataBeginColumn, dataEndColumn, chosenClassifier,
-                         filePathAccGraph, filePathHDsGraph, ROCPath, buildThresholdHistogramPath, confusionMatrixPath)
+def getCumulativeErrors(knownDataPredictions, knownDataActuals, unknownDataPredictions):
+    unknownDataActuals = [-1 * len(unknownDataPredictions[0])] * len(unknownDataPredictions) # All unknown predictions
+                                                                                            # Should be unknown CWs
+    cumulativeKnownDetectionErrors = []
+    cumulativeKnownClassificationErrors = []
+    cumulativeUnknownDetectionErrors = []
+    detectingUnknownErrors = 0
+    detectingKnownErrors = 0
+    classifyingKnownErrors = 0
+    knownUnknownCheckList = [1]*len(knownDataActuals) + [-1]*len(unknownDataActuals)
+    knownAndUnknownMasterList_Predictions = knownDataPredictions + unknownDataPredictions
+    knownAndUnknownMasterList_Actuals = knownDataActuals + unknownDataActuals
+
+    # Shuffle the data and labels in the same way
+    dataLabelsPack = list(zip(knownAndUnknownMasterList_Predictions, knownAndUnknownMasterList_Actuals,
+                                                                                        knownUnknownCheckList))
+    random.shuffle(dataLabelsPack)
+    knownAndUnknownMasterList_Predictions, knownAndUnknownMasterList_Actuals, knownUnknownCheckList = \
+                                                                                            zip(*dataLabelsPack)
+
+    for i in range(len(knownUnknownCheckList)):
+        if knownUnknownCheckList[i] is -1:  # If the prediction should be unknown...
+            if -1 in knownAndUnknownMasterList_Predictions[i]:
+                pass
+            else:
+                detectingUnknownErrors += 1
+        else:  # Else the prediction should be known
+            if -1 in knownAndUnknownMasterList_Predictions[i]:
+                detectingKnownErrors += 1
+            elif knownAndUnknownMasterList_Predictions[i] == knownAndUnknownMasterList_Actuals[i]:
+                pass
+            else:
+                classifyingKnownErrors += 1
+
+        cumulativeKnownDetectionErrors.append(detectingKnownErrors)
+        cumulativeKnownClassificationErrors.append(classifyingKnownErrors)
+        cumulativeUnknownDetectionErrors.append(detectingUnknownErrors)
+
+    return cumulativeKnownDetectionErrors, cumulativeKnownClassificationErrors, cumulativeUnknownDetectionErrors
+
+
+def getInput():
+    print("Please enter the path to your parameter value file")
+    parameterValueFile = input().replace('"', '')
+    print(parameterValueFile)
+    codebook1, codebook2, codebook3, datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
+    labelsColumn, dataBeginColumn, dataEndColumn, ROCPath, buildThresholdHistogramPath, confusionMatrixPath = \
+        parseDatasetInfoFile(parameterValueFile)
+    listOfCBs = [codebook1, codebook2, codebook3]
+
+    print("Please select which classifier you would like to use:")
+    print("\tFor SVM, enter 1.")
+    print("\tFor DT, enter 2.")
+    print("\tFor LDA, enter 3.")
+    print("\tFor KNN, enter 4.")
+    print("\tFor Logistic Regression, enter 5.")
+    print("\tFor Neural Network, enter 6.")
+    print("\tFor Naive Bayes, enter 7.")
+    print("\tFor Random Forest, enter 8.")
+    chosenClassifier = int(input())
+    classifiers = ["SVM", "DT", "LDA", "KNN", "Logistic Regression", "Neural Network", "Naive Bayes", "Random Forest"]
+    print(classifiers[chosenClassifier - 1], "chosen.")
+
+    return datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
+    labelsColumn, dataBeginColumn, dataEndColumn, ROCPath, buildThresholdHistogramPath, confusionMatrixPath, \
+    listOfCBs, chosenClassifier
+
+# datasetPath, thresholds, splits, filePathAccGraph, filePathHDsGraph, \
+# labelsColumn, dataBeginColumn, dataEndColumn, ROCPath, buildThresholdHistogramPath, confusionMatrixPath, \
+# listOfCBs, chosenClassifier = getInput()
+# print("Running...")
+# runAnomalyDetectionTests_Complete(listOfCBs, thresholds, splits, datasetPath, labelsColumn,
+#                          dataBeginColumn, dataEndColumn, chosenClassifier,
+#                          filePathAccGraph, filePathHDsGraph, ROCPath, buildThresholdHistogramPath, confusionMatrixPath,
+#                          .50, 0)
+
+
+
+
