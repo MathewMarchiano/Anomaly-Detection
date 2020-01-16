@@ -1,7 +1,12 @@
 from sklearn import svm
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.neighbors import KNeighborsClassifier
+import numpy as np
 
 class Trainer():
 
@@ -9,7 +14,7 @@ class Trainer():
         pass
 
    # Return models so that predictions can be done later.
-    def trainClassifiers(self, knownData, knownLabels, model):
+    def trainClassifiers(self, knownData, knownLabels, model, knownOriginalLabels):
         trainedModels = []
 
         for labels in knownLabels:
@@ -20,7 +25,16 @@ class Trainer():
             elif model == 3:
                 classifier = LinearDiscriminantAnalysis()
             elif model == 4:
-                classifier = KNeighborsClassifier(n_neighbors=2)
+                classifier = KNeighborsClassifier(n_neighbors=15)
+            elif model == 5:
+                classifier = LogisticRegression(random_state=1)
+            elif model == 6:
+                numKnownClasses = len(np.unique(knownOriginalLabels))
+                classifier = MLPClassifier(random_state=1, hidden_layer_sizes=(numKnownClasses,))
+            elif model == 7:
+                classifier = GaussianNB()
+            elif model == 8:
+                classifier = RandomForestClassifier(random_state=0)
             else:
                 print("Specify Classifier")
             classifier = classifier.fit(knownData, labels)
